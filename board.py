@@ -15,13 +15,17 @@ class Board():
             'white': {},
             'black': {}
         }
-        self.pieceCounters = {
+        pieceCounter = {
             'pawn': 0,
             'knight': 0,
             'bishop': 0,
             'rook': 0,
             'queen': 0,
             'king': 0
+        }
+        self.pieceCounters = {
+            'white': pieceCounter.copy(),
+            'black': pieceCounter.copy()
         }
         self.legalMoves = {} # for later
         self.moveHistory = {}
@@ -44,11 +48,25 @@ class Board():
     
     def createPiece(self, pieceType, pos, color):
         piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[pieceType]}')
-        self.pieceCounters[pieceType] += 1
+        self.pieceCounters[color][pieceType] += 1
         self.pieces[color][piece.id] = piece
 
     def startingPieces(self):
-        pass # todo: use createPiece to initialize starting position
+        color = 'white'
+        for rank in range(1, 9, 7):
+            createPiece('rook', [1, rank], color)
+            createPiece('knight', [2, rank], color)
+            createPiece('bishop', [3, rank], color)
+            createPiece('queen', [4, rank], color)
+            createPiece('king', [5, rank], color)
+            createPiece('bishop', [6, rank], color)
+            createPiece('knight', [7, rank], color)
+            createPiece('rook', [8, rank], color)
+            color = 'black' # Loop runs twice, color will be set to black after first loop
+        
+        for file in range(1, 9):
+            createPiece('pawn', [file, 2], 'white')
+            createPiece('pawn', [file, 7], 'black')
 
 if __name__ == '__main__':
     board = Board()
