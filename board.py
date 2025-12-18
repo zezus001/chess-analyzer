@@ -1,4 +1,4 @@
-from constants import FILES, OPPOSITE_COLOR, PIECE_MOVEMENTS, PIECE_CAPTURES, SLIDING_PIECES
+from constants import FILES, OPPOSITE_COLOR, PIECE_MOVEMENTS, PIECE_CAPTURES, SLIDING_PIECES, PIECE_COUNTER
 
 class Piece():
     def __init__(self, pieceType, pos, color, id):
@@ -15,24 +15,18 @@ class Board():
             'white': {},
             'black': {}
         }
-        pieceCounter = {
-            'pawn': 0,
-            'knight': 0,
-            'bishop': 0,
-            'rook': 0,
-            'queen': 0,
-            'king': 0
-        }
         self.pieceCounters = {
-            'white': pieceCounter.copy(),
-            'black': pieceCounter.copy()
+            'white': PIECE_COUNTER.copy(),
+            'black': PIECE_COUNTER.copy()
         }
-        self.legalMoves = {} # for later
+        self.legalMoves = {}
         self.moveHistory = {}
         self.FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         self.turn = 'white'
         self.halfMoves = 0
         self.fullMoves = 0
+
+        self.startingPieces()
 
     def startPos(self):
         return [
@@ -64,9 +58,9 @@ class Board():
             createPiece('rook', [8, rank], color)
             color = 'black' # Loop runs twice, color will be set to black after first loop
         
-        for file in range(1, 9):
-            createPiece('pawn', [file, 2], 'white')
-            createPiece('pawn', [file, 7], 'black')
+        for boardFile in range(1, 9):
+            createPiece('pawn', [boardFile, 2], 'white')
+            createPiece('pawn', [boardFile, 7], 'black')
 
 if __name__ == '__main__':
     board = Board()

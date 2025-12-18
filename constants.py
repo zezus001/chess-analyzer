@@ -5,6 +5,15 @@ OPPOSITE_COLOR = {
     'black': 'white'
 }
 SLIDING_PIECES = ('queen', 'bishop', 'rook')
+PIECE_COUNTER = {
+    'pawn': 0,
+    'knight': 0,
+    'bishop': 0,
+    'rook': 0,
+    'queen': 0,
+    'king': 0
+}
+
 
 # rook: horizontal and vertical directions
 ROOK_MOVES = [
