@@ -39,11 +39,16 @@ class Board():
             ['P','P','P','P','P','P','P','P'],
             ['R','N','B','Q','K','B','N','R']
         ]
+
+    def drawBoard(self):
+        for rank in self.board:
+            print(' '.join(rank))
     
     def createPiece(self, pieceType, pos, color):
-        piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[pieceType]}')
+        piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[color][pieceType]}')
         self.pieceCounters[color][pieceType] += 1
         self.pieces[color][piece.id] = piece
+        return piece # for testing
 
     def genStartingPieces(self):
         color = 'white'
@@ -65,31 +70,39 @@ class Board():
     def isInCheck(self, color):
         pass # for check detection and piece calculation filtering
 
+    def isOutOfBounds(self, pos):
+        return not (1 <= pos[0] <= 8 and 1 <= pos[1] <= 8)
+
+    def getPieceAt(self, pos):
+        for colorPieces in self.pieces.values():
+            for piece in colorPieces.values():
+                if piece.pos == pos:
+                    return piece
+        return None
+
+    def isSquareOccupied(self, pos):
+        return self.getPieceAt(pos) is not None
+
     def calculateSlidingMoves(self, piece):
         moves = []
         directions = PIECE_MOVEMENTS[piece.type]
         for direction in directions:
             step = 1
             while True:
-                newFile, newRank = piece.pos[0] + direction[0] * step, piece.pos[1] + direction[1] * step
+                targetSquare = [piece.pos[0] + direction[0] * step, piece.pos[1] + direction[1] * step]
 
-                if newFile < 1 or newFile > 8 or newRank < 1 or newRank > 8:
-                    break # Out of bounds
+                if self.isOutOfBounds(targetSquare):
+                    break
 
-                targetSquare = [newFile, newRank]
-                for pieces in self.pieces.values():
-                    for targetPiece in pieces.values():
-                        if targetPiece.pos == targetSquare:
-                            if targetPiece.color == piece.color:
-                                break # Blocked by own piece
-                            else:
-                                moves.append(targetSquare)
-                                break # Stop sliding after capture
-                        else:
-                            moves.append(targetSquare) # Empty square
+                occupyingPiece = self.getPieceAt(targetSquare)
+                if occupyingPiece:
+                    if occupyingPiece.color == piece.color:
+                        break # Blocked by own piece, stop sliding in this direction
                     else:
-                        continue
-                    break # If slide is cut short the loop doesn't need to check the rest of the squares in that direction
+                        moves.append(targetSquare) # Can capture enemy piece, add move and stop sliding
+                        break
+                else:
+                    moves.append(targetSquare) # Empty square, add move
                 step += 1
         return moves
     
