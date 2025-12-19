@@ -1,4 +1,4 @@
-from constants import FILES, OPPOSITE_COLOR, PIECE_MOVEMENTS, PIECE_CAPTURES, SLIDING_PIECES, PIECE_COUNTER
+from constants import FILES, OPPOSITE_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER
 
 class Piece():
     def __init__(self, pieceType, pos, color, id):
@@ -26,7 +26,7 @@ class Board():
         self.halfMoves = 0
         self.fullMoves = 0
 
-        self.startingPieces()
+        self.genStartingPieces()
 
     def startPos(self):
         return [
@@ -45,22 +45,66 @@ class Board():
         self.pieceCounters[color][pieceType] += 1
         self.pieces[color][piece.id] = piece
 
-    def startingPieces(self):
+    def genStartingPieces(self):
         color = 'white'
         for rank in range(1, 9, 7):
-            createPiece('rook', [1, rank], color)
-            createPiece('knight', [2, rank], color)
-            createPiece('bishop', [3, rank], color)
-            createPiece('queen', [4, rank], color)
-            createPiece('king', [5, rank], color)
-            createPiece('bishop', [6, rank], color)
-            createPiece('knight', [7, rank], color)
-            createPiece('rook', [8, rank], color)
+            self.createPiece('rook', [1, rank], color)
+            self.createPiece('knight', [2, rank], color)
+            self.createPiece('bishop', [3, rank], color)
+            self.createPiece('queen', [4, rank], color)
+            self.createPiece('king', [5, rank], color)
+            self.createPiece('bishop', [6, rank], color)
+            self.createPiece('knight', [7, rank], color)
+            self.createPiece('rook', [8, rank], color)
             color = 'black' # Loop runs twice, color will be set to black after first loop
         
         for boardFile in range(1, 9):
-            createPiece('pawn', [boardFile, 2], 'white')
-            createPiece('pawn', [boardFile, 7], 'black')
+            self.createPiece('pawn', [boardFile, 2], 'white')
+            self.createPiece('pawn', [boardFile, 7], 'black')
+
+    def isInCheck(self, color):
+        pass # for check detection and piece calculation filtering
+
+    def calculateSlidingMoves(self, piece):
+        moves = []
+        directions = PIECE_MOVEMENTS[piece.type]
+        for direction in directions:
+            step = 1
+            while True:
+                newFile, newRank = piece.pos[0] + direction[0] * step, piece.pos[1] + direction[1] * step
+
+                if newFile < 1 or newFile > 8 or newRank < 1 or newRank > 8:
+                    break # Out of bounds
+
+                targetSquare = [newFile, newRank]
+                for pieces in self.pieces.values():
+                    for targetPiece in pieces.values():
+                        if targetPiece.pos == targetSquare:
+                            if targetPiece.color == piece.color:
+                                break # Blocked by own piece
+                            else:
+                                moves.append(targetSquare)
+                                break # Stop sliding after capture
+                        else:
+                            moves.append(targetSquare) # Empty square
+                    else:
+                        continue
+                    break # If slide is cut short the loop doesn't need to check the rest of the squares in that direction
+                step += 1
+        return moves
+    
+    def calculatePieceMoves(self, piece):
+        if piece.slides:
+            return self.calculateSlidingMoves(piece)
+        else:
+            pass # do later
+    
+    def calculateMoves(self, color):
+        color = color if color else self.color
+
+        return [self.calculatePieceMoves(piece for piece in self.pieces[color].values())]
+    
+
 
 if __name__ == '__main__':
     board = Board()
