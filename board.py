@@ -105,17 +105,60 @@ class Board():
                     moves.append(targetSquare) # Empty square, add move
                 step += 1
         return moves
+
+    def calculateNonSlidingMoves(self, piece):
+        moves = []
+        directions = PIECE_MOVEMENTS[piece.type]
+        for direction in directions:
+            targetSquare = [piece.pos[0] + direction[0], piece.pos[1] + direction[1]]
+
+            if self.isOutOfBounds(targetSquare):
+                continue
+
+            occupyingPiece = self.getPieceAt(targetSquare)
+            if occupyingPiece and occupyingPiece.color == piece.color:
+                continue # Blocked by own piece
+
+            moves.append(targetSquare) # Can move to empty square or capture enemy piece
+        return moves
+
+    def calculatePawnMoves(self, piece):
+        moves = []
+        direction = 1 if piece.color == 'white' else -1
+        startRank = 2 if piece.color == 'white' else 7
+
+        # Forward move
+        forwardSquare = [piece.pos[0], piece.pos[1] + direction]
+        if not self.isSquareOccupied(forwardSquare):
+            moves.append(forwardSquare)
+
+            # Double move from starting position
+            if piece.pos[1] == startRank:
+                doubleForwardSquare = [piece.pos[0], piece.pos[1] + 2 * direction]
+                if not self.isSquareOccupied(doubleForwardSquare):
+                    moves.append(doubleForwardSquare)
+
+        # Captures
+        for fileOffset in [-1, 1]:
+            captureSquare = [piece.pos[0] + fileOffset, piece.pos[1] + direction]
+            occupyingPiece = self.getPieceAt(captureSquare)
+            if occupyingPiece and occupyingPiece.color != piece.color:
+                moves.append(captureSquare)
+
+        return moves
     
     def calculatePieceMoves(self, piece):
-        if piece.slides:
+        if piece.type == 'pawn':
+            return self.calculatePawnMoves(piece)
+        elif piece.slides:
             return self.calculateSlidingMoves(piece)
         else:
-            pass # do later
+            return self.calculateNonSlidingMoves(piece)
     
     def calculateMoves(self, color):
         color = color if color else self.color
 
-        return [self.calculatePieceMoves(piece for piece in self.pieces[color].values())]
+        return [self.calculatePieceMoves(piece) for piece in self.pieces[color].values()]
     
 
 

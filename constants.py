@@ -51,7 +51,7 @@ KING_MOVES = QUEEN_MOVES  # Board logic will limit to 1 step
 
 # pawn moves: separate handling recommended
 # define only directions; distances handled in move logic
-PAWN_MOVES = [(1, 0)]  # forward, will invert based on color
+PAWN_MOVES = [(0, 1)]  # forward, will invert based on color
 
 PIECE_MOVEMENTS = {
     "rook": ROOK_MOVES,
