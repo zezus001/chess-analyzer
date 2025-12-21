@@ -150,10 +150,11 @@ class Board():
     def calculatePieceMoves(self, piece):
         if piece.type == 'pawn':
             return self.calculatePawnMoves(piece)
-        elif piece.slides:
+        
+        if piece.slides:
             return self.calculateSlidingMoves(piece)
-        else:
-            return self.calculateNonSlidingMoves(piece)
+        
+        return self.calculateNonSlidingMoves(piece)
     
     def calculateMoves(self, color):
         color = color if color else self.color
