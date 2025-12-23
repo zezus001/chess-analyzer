@@ -178,9 +178,9 @@ def testCalculateStartingPositionMoves():
     movesWhite = board.calculateMoves('white')
     movesBlack = board.calculateMoves('black')
     
-    # Flatten the list of move lists
-    allWhiteMoves = [move for pieceMoves in movesWhite for move in pieceMoves]
-    allBlackMoves = [move for pieceMoves in movesBlack for move in pieceMoves]
+    # Flatten the list of move lists from the dict values
+    allWhiteMoves = [move for pieceMoves in movesWhite.values() for move in pieceMoves]
+    allBlackMoves = [move for pieceMoves in movesBlack.values() for move in pieceMoves]
     
     # Check total moves: 16 pawn moves + 4 knight moves = 20 for each color
     assert len(allWhiteMoves) == 20
@@ -206,3 +206,41 @@ def testCalculateStartingPositionMoves():
     blackDoubleMoves = [move for move in allBlackMoves if move[1] == 5]  # rank 5
     assert len(whiteDoubleMoves) == 8  # 8 pawns
     assert len(blackDoubleMoves) == 8  # 8 pawns
+
+def testIsInCheckByQueen():
+    board = Board()
+    # Move white king to e4 (5,4)
+    board.kings['white'].pos = [5, 4]
+    # Place black queen on d4 (4,4), attacking the king
+    queen = board.createPiece('queen', [4, 4], 'black')
+    assert board.isInCheck('white') == True
+
+def testIsInCheckByRook():
+    board = Board()
+    # Move white king to e4 (5,4)
+    board.kings['white'].pos = [5, 4]
+    # Place black rook on h4 (8,4), attacking horizontally
+    rook = board.createPiece('rook', [8, 4], 'black')
+    assert board.isInCheck('white') == True
+
+def testIsInCheckByPawn():
+    board = Board()
+    # Move white king to e4 (5,4)
+    board.kings['white'].pos = [5, 4]
+    # Place black pawn on d5 (4,5), attacking diagonally
+    pawn = board.createPiece('pawn', [4, 5], 'black')
+    assert board.isInCheck('white') == True
+
+def testNotInCheck():
+    board = Board()
+    # Starting position, no one in check
+    assert board.isInCheck('white') == False
+    assert board.isInCheck('black') == False
+
+def testIsInCheckBlack():
+    board = Board()
+    # Move black king to e5 (5,5)
+    board.kings['black'].pos = [5, 5]
+    # Place white queen on d5 (4,5), attacking the king
+    queen = board.createPiece('queen', [4, 5], 'white')
+    assert board.isInCheck('black') == True
