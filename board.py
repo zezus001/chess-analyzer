@@ -1,4 +1,5 @@
 from constants import FILES, OPPOSITE_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER
+import copy
 
 class Piece():
     def __init__(self, pieceType, pos, color, id):
@@ -50,7 +51,7 @@ class Board():
         piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[color][pieceType]}')
         self.pieceCounters[color][pieceType] += 1
         self.pieces[color][piece.id] = piece
-        return piece # for testing
+        return piece
 
     def genStartingPieces(self):
         color = 'white'
@@ -183,7 +184,7 @@ class Board():
         for piece in self.pieces[color].values():
             pieceAttackSquares = self.calculatePieceAttackSquares(piece)
             for square in pieceAttackSquares:
-                attackSquares.add(tuple(square)) # Use tuple to make it hashable
+                attackSquares.add(tuple(square)) # Tuple for hashing
         return attackSquares
 
     def isInCheck(self, color):
@@ -196,10 +197,39 @@ class Board():
         
         return False
     
+    def makeMove(self, piece, pos):
+        piece.pos = pos
+
+        for pieces in self.pieces.values():
+            for otherPiece in pieces.values():
+                if otherPiece.pos == pos and otherPiece.id != piece.id:
+                    del pieces[otherPiece.id]
+                    return
+    
+    def filterLegalMoves(self, moves, color):
+        color = color if color else self.color
+        filteredMoves = {}
+
+        for piece_id, piece_moves in moves.items():
+            filteredPieceMoves = []
+            for move in piece_moves:
+                # Create a copy of the board to simulate the move
+                tempBoard = copy.deepcopy(self)
+                tempBoard.makeMove(tempBoard.pieces[color][piece_id], move)
+                if not tempBoard.isInCheck(color):
+                    filteredPieceMoves.append(move)
+            
+            if filteredPieceMoves:
+                filteredMoves[piece_id] = filteredPieceMoves
+
+        return filteredMoves
+    
     def calculateMoves(self, color):
         color = color if color else self.color
 
-        return {piece.id: self.calculatePieceMoves(piece) for piece in self.pieces[color].values()}
+        pseudoMoves = {piece.id: self.calculatePieceMoves(piece) for piece in self.pieces[color].values()}
+
+        return self.filterLegalMoves(pseudoMoves, color)
     
 
 

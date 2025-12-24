@@ -244,3 +244,44 @@ def testIsInCheckBlack():
     # Place white queen on d5 (4,5), attacking the king
     queen = board.createPiece('queen', [4, 5], 'white')
     assert board.isInCheck('black') == True
+
+def test_white_start_moves():
+    b = Board()
+    moves = b.calculateMoves("white")
+
+    # --- Pawns should all have TWO legal moves each ---
+    white_pawns = [pid for pid in moves if pid.startswith("pawn")]
+    assert len(white_pawns) == 8
+
+    for pid in white_pawns:
+        assert len(moves[pid]) == 2
+
+    # --- Knights should have exactly 2 moves each ---
+    white_knights = [pid for pid in moves if pid.startswith("knight")]
+    assert len(white_knights) == 2
+    for pid in white_knights:
+        assert len(moves[pid]) == 2
+
+    # --- No other white pieces should move ---
+    for pid in moves:
+        if pid.startswith(("rook","bishop","queen","king")):
+            assert moves[pid] == []
+
+
+def test_black_start_moves():
+    b = Board()
+    moves = b.calculateMoves("black")
+
+    black_pawns = [pid for pid in moves if pid.startswith("pawn")]
+    assert len(black_pawns) == 8
+    for pid in black_pawns:
+        assert len(moves[pid]) == 2
+
+    black_knights = [pid for pid in moves if pid.startswith("knight")]
+    assert len(black_knights) == 2
+    for pid in black_knights:
+        assert len(moves[pid]) == 2
+
+    for pid in moves:
+        if pid.startswith(("rook","bishop","queen","king")):
+            assert moves[pid] == []
