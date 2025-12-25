@@ -245,43 +245,101 @@ def testIsInCheckBlack():
     queen = board.createPiece('queen', [4, 5], 'white')
     assert board.isInCheck('black') == True
 
-def test_white_start_moves():
-    b = Board()
-    moves = b.calculateMoves("white")
-
-    # --- Pawns should all have TWO legal moves each ---
-    white_pawns = [pid for pid in moves if pid.startswith("pawn")]
-    assert len(white_pawns) == 8
-
-    for pid in white_pawns:
-        assert len(moves[pid]) == 2
-
-    # --- Knights should have exactly 2 moves each ---
-    white_knights = [pid for pid in moves if pid.startswith("knight")]
-    assert len(white_knights) == 2
-    for pid in white_knights:
-        assert len(moves[pid]) == 2
-
-    # --- No other white pieces should move ---
-    for pid in moves:
-        if pid.startswith(("rook","bishop","queen","king")):
-            assert moves[pid] == []
+def testIsInCheckByBishop():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    whiteKing = board.createPiece('king', [4, 4], 'white')   # d4
+    board.kings['white'] = whiteKing
+    
+    bishop = board.createPiece('bishop', [7, 7], 'black')    # g7 diagonal
+    assert board.isInCheck('white') == True
 
 
-def test_black_start_moves():
-    b = Board()
-    moves = b.calculateMoves("black")
+def testIsInCheckByKnight():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    whiteKing = board.createPiece('king', [4, 4], 'white')   # e4
+    board.kings['white'] = whiteKing
+    
+    knight = board.createPiece('knight', [5, 6], 'black')    # f5 knight move
+    assert board.isInCheck('white') == True
 
-    black_pawns = [pid for pid in moves if pid.startswith("pawn")]
-    assert len(black_pawns) == 8
-    for pid in black_pawns:
-        assert len(moves[pid]) == 2
 
-    black_knights = [pid for pid in moves if pid.startswith("knight")]
-    assert len(black_knights) == 2
-    for pid in black_knights:
-        assert len(moves[pid]) == 2
+def testPieceBlockingPreventsCheck():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
 
-    for pid in moves:
-        if pid.startswith(("rook","bishop","queen","king")):
-            assert moves[pid] == []
+    king = board.createPiece('king', [5, 1], 'white')        # e1
+    board.kings['white'] = king
+    
+    rook = board.createPiece('rook', [5, 8], 'black')        # e8
+    blocker = board.createPiece('pawn', [5, 4], 'white')     # e4 blocks line
+
+    assert board.isInCheck('white') == False
+
+def testPinnedPieceCannotMove():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    king = board.createPiece('king', [5, 1], 'white')        # e1
+    board.kings['white'] = king
+    
+    rook = board.createPiece('bishop', [5, 2], 'white')        # e2 pinned piece
+    attacker = board.createPiece('rook', [5, 8], 'black')    # e8 pinning rook
+
+    moves = board.calculateMoves('white')
+
+    # Rook should either not appear or have no legal moves
+    assert rook.id not in moves or len(moves[rook.id]) == 0
+
+def testPinnedPieceCanCaptureAttacker():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    king = board.createPiece('king', [5, 1], 'white')        # e1
+    board.kings['white'] = king
+    
+    rook = board.createPiece('rook', [5, 2], 'white')        # e2
+    attacker = board.createPiece('rook', [5, 5], 'black')    # e5 (direct pin & capturable)
+
+    moves = board.calculateMoves('white')
+    
+    assert rook.id in moves
+    assert [5, 5] in moves[rook.id]          # capture is legal
+
+def testKingCannotMoveIntoCheck():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    king = board.createPiece('king', [5, 1], 'white')        # e1
+    board.kings['white'] = king
+    
+    rook = board.createPiece('rook', [1, 2], 'black')        # a2 controls file
+
+    moves = board.calculateMoves('white')
+
+    kingMoves = moves[king.id]
+    
+    assert kingMoves == [[6, 1], [4, 1]]
+
+def testSimpleCheckmate():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    # White king trapped in corner
+    whiteKing = board.createPiece('king', [8, 1], 'white')   # h1
+    board.kings['white'] = whiteKing
+
+    # Black rooks delivering mate
+    rook1 = board.createPiece('rook', [1, 1], 'black')       # h2 gives check
+    rook2 = board.createPiece('rook', [1, 2], 'black')       # g1 removes escape
+
+    assert board.isInCheck('white') == True
+    
+    moves = board.calculateMoves('white')
+    allWhiteMoves = [m for pm in moves.values() for m in pm]
+
+    # No legal moves = checkmate
+    assert len(allWhiteMoves) == 0

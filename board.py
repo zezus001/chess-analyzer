@@ -179,7 +179,7 @@ class Board():
         return self.calculatePieceMoves(piece)
 
     def calculateAttackSquares(self, color):
-        color = color if color else self.color
+        color = color if color else self.turn
         attackSquares = set()
         for piece in self.pieces[color].values():
             pieceAttackSquares = self.calculatePieceAttackSquares(piece)
@@ -188,7 +188,7 @@ class Board():
         return attackSquares
 
     def isInCheck(self, color):
-        color = color if color else self.color
+        color = color if color else self.turn
 
         attackSquares = self.calculateAttackSquares(OPPOSITE_COLOR[color])
         king = self.kings.get(color)
@@ -198,34 +198,40 @@ class Board():
         return False
     
     def makeMove(self, piece, pos):
+        target = self.getPieceAt(pos)
         piece.pos = pos
-
-        for pieces in self.pieces.values():
-            for otherPiece in pieces.values():
-                if otherPiece.pos == pos and otherPiece.id != piece.id:
-                    del pieces[otherPiece.id]
-                    return
+        if target and target.id != piece.id:
+            del self.pieces[target.color][target.id]
     
     def filterLegalMoves(self, moves, color):
-        color = color if color else self.color
+        color = color if color else self.turn
         filteredMoves = {}
 
-        for piece_id, piece_moves in moves.items():
+        for pieceId, pieceMoves in moves.items():
             filteredPieceMoves = []
-            for move in piece_moves:
-                # Create a copy of the board to simulate the move
-                tempBoard = copy.deepcopy(self)
-                tempBoard.makeMove(tempBoard.pieces[color][piece_id], move)
-                if not tempBoard.isInCheck(color):
+            piece = self.pieces[color][pieceId]
+            originalPos = piece.pos.copy()
+
+            for move in pieceMoves:
+                captured = self.getPieceAt(move)
+                if captured:
+                    del self.pieces[captured.color][captured.id]
+
+                piece.pos = move
+                if not self.isInCheck(color):
                     filteredPieceMoves.append(move)
-            
+
+                piece.pos = originalPos
+                if captured:
+                    self.pieces[captured.color][captured.id] = captured
+
             if filteredPieceMoves:
-                filteredMoves[piece_id] = filteredPieceMoves
+                filteredMoves[pieceId] = filteredPieceMoves
 
         return filteredMoves
     
     def calculateMoves(self, color):
-        color = color if color else self.color
+        color = color if color else self.turn
 
         pseudoMoves = {piece.id: self.calculatePieceMoves(piece) for piece in self.pieces[color].values()}
 
