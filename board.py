@@ -20,6 +20,11 @@ class Board():
             'white': PIECE_COUNTER.copy(),
             'black': PIECE_COUNTER.copy()
         }
+        self.gameOutcome = {
+            'gameOver': False,
+            'reason': None,
+            'winner': None
+        }
         self.legalMoves = {}
         self.moveHistory = {}
         self.kings = {}  # Store kings for quick access
@@ -48,8 +53,8 @@ class Board():
             print(' '.join(rank))
     
     def createPiece(self, pieceType, pos, color):
-        piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[color][pieceType]}')
         self.pieceCounters[color][pieceType] += 1
+        piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[color][pieceType]}')
         self.pieces[color][piece.id] = piece
         return piece
 
@@ -178,7 +183,7 @@ class Board():
         # For non-pawns, attack squares are the same as move squares
         return self.calculatePieceMoves(piece)
 
-    def calculateAttackSquares(self, color):
+    def calculateAttackSquares(self, color=None):
         color = color if color else self.turn
         attackSquares = set()
         for piece in self.pieces[color].values():
@@ -187,7 +192,7 @@ class Board():
                 attackSquares.add(tuple(square)) # Tuple for hashing
         return attackSquares
 
-    def isInCheck(self, color):
+    def isInCheck(self, color=None):
         color = color if color else self.turn
 
         attackSquares = self.calculateAttackSquares(OPPOSITE_COLOR[color])
@@ -197,13 +202,7 @@ class Board():
         
         return False
     
-    def makeMove(self, piece, pos):
-        target = self.getPieceAt(pos)
-        piece.pos = pos
-        if target and target.id != piece.id:
-            del self.pieces[target.color][target.id]
-    
-    def filterLegalMoves(self, moves, color):
+    def filterLegalMoves(self, moves, color=None):
         color = color if color else self.turn
         filteredMoves = {}
 
@@ -230,13 +229,52 @@ class Board():
 
         return filteredMoves
     
-    def calculateMoves(self, color):
+    def calculateMoves(self, color=None):
         color = color if color else self.turn
 
         pseudoMoves = {piece.id: self.calculatePieceMoves(piece) for piece in self.pieces[color].values()}
 
         return self.filterLegalMoves(pseudoMoves, color)
+        
+    def isInCheckmate(self):
+        if not self.isInCheck():
+            return False
+
+        legalMoves = self.calculateMoves()
+        if not legalMoves:
+            return True
+
+        return False
     
+    def isInStalemate(self):
+        if self.isInCheck():
+            return False
+
+        legalMoves = self.calculateMoves()
+        if not legalMoves:
+            return True
+
+        return False
+    
+    def isGameOver(self):
+        inCheck = self.isInCheck()
+        legalMoves = self.calculateMoves()
+
+        checkmate = inCheck and not legalMoves
+        stalemate = not inCheck and not legalMoves
+
+        return {
+            'gameOver': checkmate or stalemate,
+            'reason': 'checkmate' if checkmate else 'stalemate' if stalemate else None,
+            'winner': OPPOSITE_COLOR[self.turn] if checkmate else None
+        } # might change later
+    
+    def makeMove(self, piece, pos):
+        target = self.getPieceAt(pos)
+        piece.pos = pos
+        if target and target.id != piece.id:
+            del self.pieces[target.color][target.id]
+        self.turn = OPPOSITE_COLOR[self.turn]
 
 
 if __name__ == '__main__':

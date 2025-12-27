@@ -324,22 +324,72 @@ def testKingCannotMoveIntoCheck():
     
     assert kingMoves == [[6, 1], [4, 1]]
 
+def testKingsCannotBeAdjacent():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    whiteKing = board.createPiece('king', [4, 4], 'white')   # e5
+    board.kings['white'] = whiteKing
+    
+    blackKing = board.createPiece('king', [6, 4], 'black')   # g6
+    board.kings['black'] = blackKing
+
+    whiteKingMoves = board.calculateMoves('white')[whiteKing.id]
+    blackKingMoves = board.calculateMoves('black')[blackKing.id]
+
+    assert [5, 3] not in whiteKingMoves
+    assert [5, 3] not in blackKingMoves
+    assert [5, 4] not in whiteKingMoves
+    assert [5, 4] not in blackKingMoves
+    assert [5, 5] not in whiteKingMoves
+    assert [5, 5] not in blackKingMoves
+
 def testSimpleCheckmate():
     board = Board()
     board.pieces = {'white': {}, 'black': {}}
 
     # White king trapped in corner
-    whiteKing = board.createPiece('king', [8, 1], 'white')   # h1
+    whiteKing = board.createPiece('king', [8, 1], 'white')
     board.kings['white'] = whiteKing
 
     # Black rooks delivering mate
-    rook1 = board.createPiece('rook', [1, 1], 'black')       # h2 gives check
-    rook2 = board.createPiece('rook', [1, 2], 'black')       # g1 removes escape
+    rook1 = board.createPiece('rook', [1, 1], 'black')       
+    rook2 = board.createPiece('rook', [2, 2], 'black')       # ladder mate
 
-    assert board.isInCheck('white') == True
+    assert board.isInCheckmate() == True
+
+def testSimpleStalemate():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    # White king on h1 with no legal moves
+    whiteKing = board.createPiece('king', [1, 1], 'white')
+    board.kings['white'] = whiteKing
+
+    # Black queen controlling all escape squares
+    blackQueen = board.createPiece('queen', [3, 2], 'black')
+
+    assert board.isInStalemate() == True
+
+def testFoolsMate():
+    board = Board()
+
+    board.makeMove(board.pieces['white']['pawn_6'], [6, 3])  # f3
+    board.makeMove(board.pieces['black']['pawn_5'], [5, 5])  # e5
+    board.makeMove(board.pieces['white']['pawn_7'], [7, 4])  # g3
+    board.makeMove(board.pieces['black']['queen_1'], [8, 4])  # Qh4#
     
-    moves = board.calculateMoves('white')
-    allWhiteMoves = [m for pm in moves.values() for m in pm]
+    assert board.isInCheckmate() == True
 
-    # No legal moves = checkmate
-    assert len(allWhiteMoves) == 0
+def testScholarMate():
+    board = Board()
+
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 4])  # e4
+    board.makeMove(board.pieces['black']['pawn_5'], [5, 5])  # e5
+    board.makeMove(board.pieces['white']['bishop_2'], [3, 4])  # Bc4
+    board.makeMove(board.pieces['black']['knight_1'], [3, 6])  # Nf6
+    board.makeMove(board.pieces['white']['queen_1'], [8, 5])  # Qh5
+    board.makeMove(board.pieces['black']['knight_2'], [6, 6])  # Nf6
+    board.makeMove(board.pieces['white']['queen_1'], [6, 7])  # Qxf7#
+
+    assert board.isInCheckmate() == True
