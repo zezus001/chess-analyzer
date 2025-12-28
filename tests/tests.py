@@ -337,12 +337,9 @@ def testKingsCannotBeAdjacent():
     whiteKingMoves = board.calculateMoves('white')[whiteKing.id]
     blackKingMoves = board.calculateMoves('black')[blackKing.id]
 
-    assert [5, 3] not in whiteKingMoves
-    assert [5, 3] not in blackKingMoves
-    assert [5, 4] not in whiteKingMoves
-    assert [5, 4] not in blackKingMoves
-    assert [5, 5] not in whiteKingMoves
-    assert [5, 5] not in blackKingMoves
+    for illegalMove in [[5, 3], [5, 4], [5, 5]]:
+        assert illegalMove not in whiteKingMoves
+        assert illegalMove not in blackKingMoves
 
 def testSimpleCheckmate():
     board = Board()
@@ -393,3 +390,77 @@ def testScholarMate():
     board.makeMove(board.pieces['white']['queen_1'], [6, 7])  # Qxf7#
 
     assert board.isInCheckmate() == True
+
+def testCanCastleKingside():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    
+    # Ensure no checks on path
+    assert board.canCastleKingside() == True
+
+def testCanCastleQueenside():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    
+    # Ensure no checks on path
+    assert board.canCastleQueenside() == True
+
+def testBlackCanCastleKingside():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['black'] = {pid: p for pid, p in board.pieces['black'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    
+    for piece in board.pieces['black'].values():
+        print(piece.type, piece.pos)
+    # Ensure no checks on path
+    assert board.canCastleKingside('black') == True
+
+def testCannotCastleThroughCheck():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    
+    # Place an enemy knight attacking the square the king would pass through
+    enemyKnight = board.createPiece('knight', [5, 3], 'black')
+
+    assert board.canCastleKingside() == False
+
+def testBlackCannotCastleThroughCheck():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['black'] = {pid: p for pid, p in board.pieces['black'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    
+    # Place an enemy knight attacking the square the king would pass through
+    enemyKnight = board.createPiece('knight', [5, 6], 'white')
+
+    assert board.canCastleKingside('black') == False
+    
+def testCannotCastleIfKingMoves():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+
+    # Move the king
+    board.makeMove(board.kings['white'], [6, 1])
+
+    assert board.canCastleKingside() == False
+
+def testCannotCastleIfRookMoves():
+    board = Board()
+    
+    # Clear squares between king and rook
+    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+
+    # Move the rook
+    rook = board.getPieceAt([8, 1])
+    board.makeMove(rook, [7, 1])
+
+    assert board.canCastleKingside() == False

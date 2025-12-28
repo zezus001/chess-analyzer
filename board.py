@@ -16,6 +16,10 @@ class Board():
             'white': {},
             'black': {}
         }
+        self.canCastle = {
+            'white': {'kingside': True, 'queenside': True},
+            'black': {'kingside': True, 'queenside': True}
+        }
         self.pieceCounters = {
             'white': PIECE_COUNTER.copy(),
             'black': PIECE_COUNTER.copy()
@@ -191,13 +195,57 @@ class Board():
             for square in pieceAttackSquares:
                 attackSquares.add(tuple(square)) # Tuple for hashing
         return attackSquares
+    
+    def isSquareAttacked(self, pos, color=None):
+        color = color if color else OPPOSITE_COLOR[self.turn] # Check if square is attacked by opponent
+        attackSquares = self.calculateAttackSquares(color)
+        return tuple(pos) in attackSquares
+    
+    def canCastleKingside(self, color=None):
+        color = color if color else self.turn
+        rank = 1 if color == 'white' else 8
+
+        if not self.canCastle[color]['kingside']:
+            return False
+
+        castlingRook = self.getPieceAt([8, rank])
+        if not castlingRook or castlingRook.type != 'rook' or castlingRook.color != color:
+            return False
+        
+        squaresBetween = [[6, rank], [7, rank]]
+        for square in squaresBetween:
+            if self.isSquareOccupied(square) or self.isSquareAttacked(square, OPPOSITE_COLOR[color]):
+                return False
+        
+        return True
+    
+    def canCastleQueenside(self, color=None):
+        color = color if color else self.turn
+        rank = 1 if color == 'white' else 8
+
+        if not self.canCastle[color]['queenside']:
+            return False
+        
+        king = self.kings.get(color)
+        if king.pos != [5, rank]:
+            return False
+        
+        castlingRook = self.getPieceAt([1, rank])
+        if not castlingRook or castlingRook.type != 'rook' or castlingRook.color != color:
+            return False
+        
+        squaresBetween = [[2, rank], [3, rank], [4, rank]]
+        for square in squaresBetween:
+            if self.isSquareOccupied(square) or self.isSquareAttacked(square):
+                return False
+        
+        return True
 
     def isInCheck(self, color=None):
         color = color if color else self.turn
-
-        attackSquares = self.calculateAttackSquares(OPPOSITE_COLOR[color])
+        
         king = self.kings.get(color)
-        if king and tuple(king.pos) in attackSquares:
+        if king and self.isSquareAttacked(king.pos, OPPOSITE_COLOR[color]):
             return True
         
         return False
@@ -233,8 +281,16 @@ class Board():
         color = color if color else self.turn
 
         pseudoMoves = {piece.id: self.calculatePieceMoves(piece) for piece in self.pieces[color].values()}
+        filteredMoves = self.filterLegalMoves(pseudoMoves, color)
 
-        return self.filterLegalMoves(pseudoMoves, color)
+        if self.canCastleKingside(color):
+            king = self.kings[color]
+            filteredMoves[king.id].append([7, king.pos[1]])
+        if self.canCastleQueenside(color):
+            king = self.kings[color]
+            filteredMoves[king.id].append([3, king.pos[1]])
+
+        return filteredMoves
         
     def isInCheckmate(self):
         if not self.isInCheck():
@@ -274,6 +330,16 @@ class Board():
         piece.pos = pos
         if target and target.id != piece.id:
             del self.pieces[target.color][target.id]
+
+        if piece.type == 'king':
+            self.canCastle[piece.color]['kingside'] = False
+            self.canCastle[piece.color]['queenside'] = False
+        elif piece.type == 'rook':
+            if piece.pos[0] == 1:
+                self.canCastle[piece.color]['queenside'] = False
+            elif piece.pos[0] == 8:
+                self.canCastle[piece.color]['kingside'] = False
+
         self.turn = OPPOSITE_COLOR[self.turn]
 
 
