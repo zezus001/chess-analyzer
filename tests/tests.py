@@ -391,7 +391,7 @@ def testScholarMate():
 
     assert board.isInCheckmate() == True
 
-def testCanCastleKingside():
+def testCastleKingside():
     board = Board()
     
     # Clear squares between king and rook
@@ -400,7 +400,13 @@ def testCanCastleKingside():
     # Ensure no checks on path
     assert board.canCastleKingside() == True
 
-def testCanCastleQueenside():
+    board.makeMove(board.kings['white'], [7, 1])  # e1 to g1
+    king = board.kings['white']
+    rook = board.pieces['white']['rook_2']  # h1 rook
+    assert king.pos == [7, 1]
+    assert rook.pos == [6, 1]
+
+def testCastleQueenside():
     board = Board()
     
     # Clear squares between king and rook
@@ -409,16 +415,26 @@ def testCanCastleQueenside():
     # Ensure no checks on path
     assert board.canCastleQueenside() == True
 
-def testBlackCanCastleKingside():
+    board.makeMove(board.kings['white'], [3, 1])  # e1 to c1
+    king = board.kings['white']
+    rook = board.pieces['white']['rook_1']  # a1 rook
+    assert king.pos == [3, 1]
+    assert rook.pos == [4, 1]
+
+def testBlackCastleKingside():
     board = Board()
     
     # Clear squares between king and rook
     board.pieces['black'] = {pid: p for pid, p in board.pieces['black'].items() if p.type not in ['knight', 'bishop', 'queen']}
-    
-    for piece in board.pieces['black'].values():
-        print(piece.type, piece.pos)
+
     # Ensure no checks on path
     assert board.canCastleKingside('black') == True
+
+    board.makeMove(board.kings['black'], [7, 8])  # e8 to g8
+    king = board.kings['black']
+    rook = board.pieces['black']['rook_2']  # h8 rook
+    assert king.pos == [7, 8]
+    assert rook.pos == [6, 8]
 
 def testCannotCastleThroughCheck():
     board = Board()
@@ -460,7 +476,60 @@ def testCannotCastleIfRookMoves():
     board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
 
     # Move the rook
-    rook = board.getPieceAt([8, 1])
+    rook = board.pieces['white']['rook_2']  # h1 rook
     board.makeMove(rook, [7, 1])
 
     assert board.canCastleKingside() == False
+
+def testEnPassantCapture():
+    board = Board()
+    
+    whitePawn = board.pieces['white']['pawn_5']  # e pawn
+    blackPawn = board.pieces['black']['pawn_4']  # d pawn
+
+    # White pawn moves e2 to e4
+    whitePawn.pos = [5, 5]  # Move white pawn to e5 directly for test
+    # Black pawn moves d7 to d5
+    board.makeMove(blackPawn, [4, 5])
+    # White pawn captures en passant d5
+    board.turn = 'white'  # Ensure it's white's turn
+    board.makeMove(whitePawn, [4, 6])
+
+    assert whitePawn.pos == [4, 6]
+    assert 'pawn_4' not in board.pieces['black']  # Black pawn should be captured
+    
+    whitePawn = board.pieces['white']['pawn_4']  # d pawn
+    blackPawn = board.pieces['black']['pawn_3']  # c pawn
+
+    board.pieces['black']['pawn_3'].pos = [3, 4]  # Move black pawn to c4 directly for test
+    # White pawn moves d2 to d4
+    board.makeMove(whitePawn, [4, 4])
+    # Black pawn captures en passant d3
+    board.turn = 'black'  # Ensure it's black's turn
+    board.makeMove(blackPawn, [4, 3])
+
+    assert blackPawn.pos == [4, 3]
+    assert 'pawn_4' not in board.pieces['white']  # White pawn should be captured
+
+def testCannotEnPassantAfterOneMove():
+    board = Board()
+    
+    whitePawn = board.pieces['white']['pawn_5']  # e pawn
+    blackPawn = board.pieces['black']['pawn_4']  # d pawn
+
+    # White pawn moves e2 to e4
+    whitePawn.pos = [5, 5]  # Move white pawn to e5 directly for test
+    # Black pawn moves d7 to d5
+    board.turn = 'black'
+    board.makeMove(blackPawn, [4, 5])
+    # White makes a different move
+    otherWhitePawn = board.pieces['white']['pawn_6']  # f pawn
+    board.makeMove(otherWhitePawn, [6, 4])
+    # Now black tries to capture en passant
+    otherBlackPawn = board.pieces['black']['pawn_3']  # c pawn
+    board.makeMove(otherBlackPawn, [3, 6])  # Filler move
+
+    whitePawnCaptures = board.calculatePawnCaptures(whitePawn, False)
+    
+    assert board.enPassantSquare is None
+    assert [4, 6] not in whitePawnCaptures  # e5 to d6 should not be possible 

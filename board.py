@@ -32,6 +32,7 @@ class Board():
         self.legalMoves = {}
         self.moveHistory = {}
         self.kings = {}  # Store kings for quick access
+        self.enPassantSquare = None
         self.check = False
         self.FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         self.turn = 'white'
@@ -108,11 +109,10 @@ class Board():
 
                 occupyingPiece = self.getPieceAt(targetSquare)
                 if occupyingPiece:
-                    if occupyingPiece.color == piece.color:
-                        break # Blocked by own piece, stop sliding in this direction
-                    else:
+                    if occupyingPiece.color != piece.color:
                         moves.append(targetSquare) # Can capture enemy piece, add move and stop sliding
-                        break
+
+                    break # Blocked by a piece, stop sliding
                 else:
                     moves.append(targetSquare) # Empty square, add move
                 step += 1
@@ -146,6 +146,9 @@ class Board():
                 else:
                     occupyingPiece = self.getPieceAt(captureSquare)
                     if occupyingPiece and occupyingPiece.color != piece.color:
+                        moves.append(captureSquare)
+                    # En passant
+                    if self.enPassantSquare and captureSquare == self.enPassantSquare:
                         moves.append(captureSquare)
 
         return moves
@@ -327,9 +330,25 @@ class Board():
     
     def makeMove(self, piece, pos):
         target = self.getPieceAt(pos)
-        piece.pos = pos
         if target and target.id != piece.id:
             del self.pieces[target.color][target.id]
+        elif piece.type == 'pawn' and pos == self.enPassantSquare:
+            direction = 1 if piece.color == 'white' else -1
+            capturedPawnPos = [pos[0], pos[1] - direction]
+            capturedPawn = self.getPieceAt(capturedPawnPos)
+            if capturedPawn:
+                del self.pieces[capturedPawn.color][capturedPawn.id]
+
+        if piece.type == 'king':
+            netHorizontalMove = abs(pos[0] - piece.pos[0])
+            if netHorizontalMove == 2: # Castling
+                rank = piece.pos[1]
+                if pos[0] == 7: # Kingside
+                    rook = self.pieces[piece.color]['rook_2'] # h rook
+                    rook.pos = [6, rank]
+                elif pos[0] == 3: # Queenside
+                    rook = self.pieces[piece.color]['rook_1'] # a rook
+                    rook.pos = [4, rank]
 
         if piece.type == 'king':
             self.canCastle[piece.color]['kingside'] = False
@@ -340,6 +359,14 @@ class Board():
             elif piece.pos[0] == 8:
                 self.canCastle[piece.color]['kingside'] = False
 
+        self.enPassantSquare = None
+        if piece.type == 'pawn':
+            startingRank = 2 if piece.color == 'white' else 7
+            twoSquareAdvanceRank = 4 if piece.color == 'white' else 5
+            if piece.pos[1] == startingRank and pos[1] == twoSquareAdvanceRank:
+                self.enPassantSquare = [piece.pos[0], piece.pos[1] + (1 if piece.color == 'white' else -1)]
+
+        piece.pos = pos
         self.turn = OPPOSITE_COLOR[self.turn]
 
 
