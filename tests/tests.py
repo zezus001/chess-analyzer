@@ -341,6 +341,30 @@ def testKingsCannotBeAdjacent():
         assert illegalMove not in whiteKingMoves
         assert illegalMove not in blackKingMoves
 
+def testDoubleCheck():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    whiteKing = board.createPiece('king', [4, 3], 'white')
+    board.kings['white'] = whiteKing
+    whiteRook = board.createPiece('rook', [7, 4], 'white')
+
+    blackQueen = board.createPiece('queen', [7, 6], 'black')
+    blackRook = board.createPiece('rook', [6, 5], 'black')
+
+    board.turn = 'black'
+    assert board.isInCheck('white') == False
+
+    board.makeMove(blackRook, [4, 5])  # Double check from queen and rook
+
+    assert board.isInCheck('white') == True
+
+    moves = board.calculateMoves()
+
+    assert whiteKing.id in moves
+    assert len(moves[whiteKing.id]) > 0  # King must move
+    assert whiteRook.id not in moves  # Rook cannot block or capture
+
 def testSimpleCheckmate():
     board = Board()
     board.pieces = {'white': {}, 'black': {}}
@@ -365,6 +389,71 @@ def testSimpleStalemate():
 
     # Black queen controlling all escape squares
     blackQueen = board.createPiece('queen', [3, 2], 'black')
+
+    assert board.isInStalemate() == True
+
+def testPinnedPieceCheckmate():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    whiteKing = board.createPiece('king', [1, 1], 'white')        # a1
+    board.kings['white'] = whiteKing
+    pinnedQueen = board.createPiece('queen', [2, 2], 'white')     # b2
+
+    blackPawn = board.createPiece('pawn', [2, 3], 'black')          # b3
+    blackRook = board.createPiece('rook', [3, 2], 'black')
+    blackBishop = board.createPiece('bishop', [6, 6], 'black')
+
+    board.turn = 'black'
+    board.makeMove(blackRook, [3, 1])
+
+    assert board.isInCheckmate() == True
+
+def testStalemateWithPinnedPiece():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    whiteKing = board.createPiece('king', [1, 1], 'white')        # a1
+    board.kings['white'] = whiteKing
+    pinnedPawn = board.createPiece('pawn', [2, 2], 'white')     # b2
+
+    blackKing = board.createPiece('king', [4, 2], 'black')        # d2
+    board.kings['black'] = blackKing
+    blackLightBishop = board.createPiece('bishop', [3, 4], 'black')          # c4
+    blackDarkBishop = board.createPiece('bishop', [4, 4], 'black')
+
+    board.turn = 'black'
+    board.makeMove(blackKing, [3, 2])
+
+    assert board.isInStalemate() == True
+
+def testStalemateWithManyPieces():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    whiteKing = board.createPiece('king', [1, 3], 'white')        # a3
+    board.kings['white'] = whiteKing
+    whiteRook = board.createPiece('rook', [2, 4], 'white')       # b4
+    whiteBishop = board.createPiece('bishop', [2, 3], 'white')   # b3
+
+    blackBishop = board.createPiece('bishop', [3, 5], 'black')         # c5
+    blackKnight = board.createPiece('knight', [3, 8], 'black')         # b6
+    blackRook1 = board.createPiece('rook', [6, 3], 'black')         # f3
+    blackRook2 = board.createPiece('rook', [3, 2], 'black')         # c2
+
+    whiteDPawn = board.createPiece('pawn', [4, 6], 'white')     # d6
+    blackDPawn = board.createPiece('pawn', [4, 7], 'black')     # d7
+    whiteEPawn = board.createPiece('pawn', [5, 5], 'white')     # e5
+    blackEPawn = board.createPiece('pawn', [5, 6], 'black')     # e6
+    whiteFPawn = board.createPiece('pawn', [6, 4], 'white')     # f4
+    blackFPawn = board.createPiece('pawn', [6, 5], 'black')     # f5
+    whiteGPawn = board.createPiece('pawn', [7, 3], 'white')     # g3
+    blackGPawn = board.createPiece('pawn', [7, 4], 'black')     # g4
+    whiteHPawn = board.createPiece('pawn', [8, 2], 'white')     # h2
+    blackHPawn = board.createPiece('pawn', [8, 3], 'black')     # h3
+
+    board.turn = 'black'
+    board.makeMove(blackKnight, [2, 6])
 
     assert board.isInStalemate() == True
 
@@ -533,3 +622,111 @@ def testCannotEnPassantAfterOneMove():
     
     assert board.enPassantSquare is None
     assert [4, 6] not in whitePawnCaptures  # e5 to d6 should not be possible 
+
+def testPromotion():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    whitePawn = board.createPiece('pawn', [1, 7], 'white')  # a pawn
+
+    # White pawn moves a7 to a8 and promotes to queen
+    board.makeMove(whitePawn, [1, 8])
+
+    promotedPiece = board.getPieceAt([1, 8])
+    assert promotedPiece is not None
+    assert promotedPiece.type == 'queen'
+    assert promotedPiece.pos == [1, 8]
+
+def testBlackPromotion():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    blackPawn = board.createPiece('pawn', [8, 2], 'black')  # h pawn
+
+    # Black pawn moves h2 to h1 and promotes to queen
+    board.turn = 'black'
+    board.makeMove(blackPawn, [8, 1])
+
+    promotedPiece = board.getPieceAt([8, 1])
+    assert promotedPiece is not None
+    assert promotedPiece.type == 'queen'
+    assert promotedPiece.pos == [8, 1]
+
+def testPromotionIntoCheck():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    blackKing = board.createPiece('king', [8, 8], 'black')        # h8
+    board.kings['white'] = blackKing
+
+    whitePawn = board.createPiece('pawn', [1, 7], 'white')  # h pawn
+
+    board.makeMove(whitePawn, [1, 8])
+
+    assert board.isInCheck() == True
+
+def testPromotionIntoCheckmate():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    blackKing = board.createPiece('king', [8, 8], 'black')        # h8
+    board.kings['black'] = blackKing
+
+    whiteRook = board.createPiece('rook', [2, 7], 'white')        # b7
+    whitePawn = board.createPiece('pawn', [1, 7], 'white')  # a pawn
+
+    board.makeMove(whitePawn, [1, 8])
+
+    assert board.isInCheckmate() == True
+
+def testPromotionWithCapture():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+
+    blackKnight = board.createPiece('knight', [2, 8], 'black')
+
+    whitePawn = board.createPiece('pawn', [1, 7], 'white')  # a pawn
+
+    # White pawn moves a7 to b8 capturing black pawn and promotes to queen
+    board.makeMove(whitePawn, [2, 8])
+
+    promotedPiece = board.getPieceAt([2, 8])
+    assert promotedPiece is not None
+    assert promotedPiece.type == 'queen'
+    assert promotedPiece.pos == [2, 8]
+    assert 'knight_3' not in board.pieces['black']  # Black pawn should be captured
+
+def testPromotionIntoDoubleCheck():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    blackKing = board.createPiece('king', [3, 7], 'black')        # h8
+    board.kings['black'] = blackKing
+    blackRook = board.createPiece('rook', [2, 1], 'black')        # e8
+    
+    whitePawn = board.createPiece('pawn', [2, 7], 'white')  # a pawn
+    whiteQueen = board.createPiece('queen', [1, 7], 'white')        # e1
+
+    board.makeMove(whitePawn, [2, 8])
+
+    assert board.isInCheck() == True
+    
+    moves = board.calculateMoves()
+
+    assert blackKing.id in moves
+    assert len(moves[blackKing.id]) > 0  # King must move
+    assert blackRook.id not in moves  # Rook cannot block or capture
+
+def testPromotionIntoStalemate():
+    board = Board()
+    board.pieces = {'white': {}, 'black': {}}
+    
+    blackKing = board.createPiece('king', [1, 7], 'black')        # h8
+    board.kings['black'] = blackKing
+
+    whiteKing = board.createPiece('king', [3, 6], 'white')        # g7
+    whitePawn = board.createPiece('pawn', [3, 7], 'white')  # a pawn
+
+    board.makeMove(whitePawn, [3, 8])
+
+    assert board.isInStalemate() == True

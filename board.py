@@ -328,6 +328,12 @@ class Board():
             'winner': OPPOSITE_COLOR[self.turn] if checkmate else None
         } # might change later
     
+    def promotePawn(self, pawn, newType='queen'):
+        promotedPiece = self.createPiece(newType, pawn.pos, pawn.color)
+        del self.pieces[pawn.color][pawn.id]
+        
+        return promotedPiece
+
     def makeMove(self, piece, pos):
         target = self.getPieceAt(pos)
         if target and target.id != piece.id:
@@ -367,6 +373,12 @@ class Board():
                 self.enPassantSquare = [piece.pos[0], piece.pos[1] + (1 if piece.color == 'white' else -1)]
 
         piece.pos = pos
+
+        if piece.type == 'pawn':
+            backRank = 8 if piece.color == 'white' else 1
+            if piece.pos[1] == backRank:
+                self.promotePawn(piece, 'queen')
+
         self.turn = OPPOSITE_COLOR[self.turn]
 
 
