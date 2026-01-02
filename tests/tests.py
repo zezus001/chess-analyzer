@@ -11,7 +11,7 @@ def testOutOfBounds():
 
 def testCalculateSlidingMovesRook():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     rook = board.createPiece('rook', [4, 4], 'white')
     moves = board.calculateSlidingMoves(rook)
     expectedMoves = []
@@ -27,7 +27,7 @@ def testCalculateSlidingMovesRook():
 
 def testCalculateSlidingMovesBishop():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     bishop = board.createPiece('bishop', [4, 4], 'white')
     moves = board.calculateSlidingMoves(bishop)
     expectedMoves = []
@@ -48,7 +48,7 @@ def testCalculateSlidingMovesBishop():
 
 def testCalculateSlidingMovesQueen():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     queen = board.createPiece('queen', [4, 4], 'white')
     moves = board.calculateSlidingMoves(queen)
     expectedMoves = []
@@ -69,7 +69,7 @@ def testCalculateSlidingMovesQueen():
 
 def testCalculateSlidingMovesRookBlocking():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     rook = board.createPiece('rook', [4, 4], 'white')
     blocker = board.createPiece('pawn', [5, 4], 'white')  # own piece blocking
     moves = board.calculateSlidingMoves(rook)
@@ -79,7 +79,7 @@ def testCalculateSlidingMovesRookBlocking():
 
 def testCalculateSlidingMovesRookCapturing():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     rook = board.createPiece('rook', [4, 4], 'white')
     enemy = board.createPiece('pawn', [5, 4], 'black')  # enemy piece to capture
     moves = board.calculateSlidingMoves(rook)
@@ -88,7 +88,7 @@ def testCalculateSlidingMovesRookCapturing():
 
 def testCalculateNonSlidingMovesKnight():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     knight = board.createPiece('knight', [4, 4], 'white')
     moves = board.calculateNonSlidingMoves(knight)
     expectedMoves = [
@@ -99,7 +99,7 @@ def testCalculateNonSlidingMovesKnight():
 
 def testCalculateNonSlidingMovesKnightEdge():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     knight = board.createPiece('knight', [1, 1], 'white')  # corner
     moves = board.calculateNonSlidingMoves(knight)
     expectedMoves = [[3, 2], [2, 3]]  # only 2 valid moves from corner
@@ -107,7 +107,7 @@ def testCalculateNonSlidingMovesKnightEdge():
 
 def testCalculateNonSlidingMovesKing():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     king = board.createPiece('king', [4, 4], 'white')
     moves = board.calculateNonSlidingMoves(king)
     expectedMoves = [
@@ -117,7 +117,7 @@ def testCalculateNonSlidingMovesKing():
 
 def testCalculateNonSlidingMovesKingEdge():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     king = board.createPiece('king', [1, 1], 'white')  # corner
     moves = board.calculateNonSlidingMoves(king)
     expectedMoves = [[1, 2], [2, 1], [2, 2]]
@@ -125,7 +125,7 @@ def testCalculateNonSlidingMovesKingEdge():
 
 def testCalculateNonSlidingMovesPawn():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     pawn = board.createPiece('pawn', [4, 2], 'white')
     moves = board.calculatePawnMoves(pawn)
     expectedMoves = [[4, 3], [4, 4]]  # Single and double forward moves from starting position
@@ -133,7 +133,7 @@ def testCalculateNonSlidingMovesPawn():
 
 def testCalculateNonSlidingMovesPawnBlack():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     pawn = board.createPiece('pawn', [4, 7], 'black')
     moves = board.calculatePawnMoves(pawn)
     expectedMoves = [[4, 6], [4, 5]]  # Single and double forward moves from starting position
@@ -141,7 +141,7 @@ def testCalculateNonSlidingMovesPawnBlack():
 
 def testCalculateNonSlidingMovesPawnCapture():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     pawn = board.createPiece('pawn', [4, 2], 'white')
     enemy1 = board.createPiece('pawn', [3, 3], 'black')  # diagonal left
     enemy2 = board.createPiece('pawn', [5, 3], 'black')  # diagonal right
@@ -151,7 +151,7 @@ def testCalculateNonSlidingMovesPawnCapture():
 
 def testCalculateNonSlidingMovesBlocking():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     knight = board.createPiece('knight', [4, 4], 'white')
     blocker = board.createPiece('pawn', [6, 5], 'white')  # block one knight move
     moves = board.calculateNonSlidingMoves(knight)
@@ -163,7 +163,7 @@ def testCalculateNonSlidingMovesBlocking():
 
 def testCalculateNonSlidingMovesCapturing():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     knight = board.createPiece('knight', [4, 4], 'white')
     enemy = board.createPiece('pawn', [6, 5], 'black')  # enemy on knight move square
     moves = board.calculateNonSlidingMoves(knight)
@@ -247,7 +247,7 @@ def testIsInCheckBlack():
 
 def testIsInCheckByBishop():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     whiteKing = board.createPiece('king', [4, 4], 'white')   # d4
     board.kings['white'] = whiteKing
@@ -258,7 +258,7 @@ def testIsInCheckByBishop():
 
 def testIsInCheckByKnight():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     whiteKing = board.createPiece('king', [4, 4], 'white')   # e4
     board.kings['white'] = whiteKing
@@ -269,7 +269,7 @@ def testIsInCheckByKnight():
 
 def testPieceBlockingPreventsCheck():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     king = board.createPiece('king', [5, 1], 'white')        # e1
     board.kings['white'] = king
@@ -281,7 +281,7 @@ def testPieceBlockingPreventsCheck():
 
 def testPinnedPieceCannotMove():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     king = board.createPiece('king', [5, 1], 'white')        # e1
     board.kings['white'] = king
@@ -296,7 +296,7 @@ def testPinnedPieceCannotMove():
 
 def testPinnedPieceCanCaptureAttacker():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     king = board.createPiece('king', [5, 1], 'white')        # e1
     board.kings['white'] = king
@@ -311,7 +311,7 @@ def testPinnedPieceCanCaptureAttacker():
 
 def testKingCannotMoveIntoCheck():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     king = board.createPiece('king', [5, 1], 'white')        # e1
     board.kings['white'] = king
@@ -326,7 +326,7 @@ def testKingCannotMoveIntoCheck():
 
 def testKingsCannotBeAdjacent():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     whiteKing = board.createPiece('king', [4, 4], 'white')   # e5
     board.kings['white'] = whiteKing
@@ -343,7 +343,7 @@ def testKingsCannotBeAdjacent():
 
 def testDoubleCheck():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     whiteKing = board.createPiece('king', [4, 3], 'white')
     board.kings['white'] = whiteKing
@@ -367,7 +367,7 @@ def testDoubleCheck():
 
 def testSimpleCheckmate():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     # White king trapped in corner
     whiteKing = board.createPiece('king', [8, 1], 'white')
@@ -381,7 +381,7 @@ def testSimpleCheckmate():
 
 def testSimpleStalemate():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     # White king on h1 with no legal moves
     whiteKing = board.createPiece('king', [1, 1], 'white')
@@ -394,7 +394,7 @@ def testSimpleStalemate():
 
 def testPinnedPieceCheckmate():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     whiteKing = board.createPiece('king', [1, 1], 'white')        # a1
     board.kings['white'] = whiteKing
@@ -411,7 +411,7 @@ def testPinnedPieceCheckmate():
 
 def testStalemateWithPinnedPiece():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     whiteKing = board.createPiece('king', [1, 1], 'white')        # a1
     board.kings['white'] = whiteKing
@@ -429,7 +429,7 @@ def testStalemateWithPinnedPiece():
 
 def testStalemateWithManyPieces():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     whiteKing = board.createPiece('king', [1, 3], 'white')        # a3
     board.kings['white'] = whiteKing
@@ -625,7 +625,7 @@ def testCannotEnPassantAfterOneMove():
 
 def testPromotion():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     whitePawn = board.createPiece('pawn', [1, 7], 'white')  # a pawn
 
@@ -639,7 +639,7 @@ def testPromotion():
 
 def testBlackPromotion():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     blackPawn = board.createPiece('pawn', [8, 2], 'black')  # h pawn
 
@@ -654,7 +654,7 @@ def testBlackPromotion():
 
 def testPromotionIntoCheck():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     blackKing = board.createPiece('king', [8, 8], 'black')        # h8
     board.kings['white'] = blackKing
@@ -667,7 +667,7 @@ def testPromotionIntoCheck():
 
 def testPromotionIntoCheckmate():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     blackKing = board.createPiece('king', [8, 8], 'black')        # h8
     board.kings['black'] = blackKing
@@ -681,7 +681,7 @@ def testPromotionIntoCheckmate():
 
 def testPromotionWithCapture():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
 
     blackKnight = board.createPiece('knight', [2, 8], 'black')
 
@@ -698,7 +698,7 @@ def testPromotionWithCapture():
 
 def testPromotionIntoDoubleCheck():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     blackKing = board.createPiece('king', [3, 7], 'black')        # h8
     board.kings['black'] = blackKing
@@ -719,7 +719,7 @@ def testPromotionIntoDoubleCheck():
 
 def testPromotionIntoStalemate():
     board = Board()
-    board.pieces = {'white': {}, 'black': {}}
+    board.clearBoard()
     
     blackKing = board.createPiece('king', [1, 7], 'black')        # h8
     board.kings['black'] = blackKing

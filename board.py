@@ -41,6 +41,25 @@ class Board():
         self.fullMoves = 0
 
         self.genStartingPieces()
+    
+    def clearBoard(self):
+        self.board = self.startPos()
+        self.boardArray = [[None for _ in range(8)] for _ in range(8)]
+        self.pieces = {
+            'white': {},
+            'black': {}
+        }
+        self.canCastle = {
+            'white': {'kingside': True, 'queenside': True},
+            'black': {'kingside': True, 'queenside': True}
+        }
+        self.pieceCounters = {
+            'white': PIECE_COUNTER.copy(),
+            'black': PIECE_COUNTER.copy()
+        }
+        self.kings = {}
+        self.enPassantSquare = None
+        self.turn = 'white'
 
     def startPos(self):
         return [
@@ -58,23 +77,26 @@ class Board():
         for rank in self.board:
             print(' '.join(rank))
     
+    def setBoardArray(self, piece, pos):
+        self.boardArray[pos[1]-1][pos[0]-1] = piece
+    
     def createPiece(self, pieceType, pos, color):
         self.pieceCounters[color][pieceType] += 1
         pieceId = f'{pieceType}_{self.pieceCounters[color][pieceType]}'
 
         piece = Piece(pieceType, pos, color, pieceId)
         self.pieces[color][piece.id] = piece
-        self.boardArray[pos[1]][pos[0]] = piece
+        self.setBoardArray(piece, pos)
         
         return piece
         
     def movePiece(self, piece, pos):
-        self.boardArray[piece.pos[1]][piece.pos[0]] = None
+        self.setBoardArray(None, piece.pos)
         piece.pos = pos
-        self.boardArray[pos[1]][pos[0]] = piece
-    
+        self.setBoardArray(piece, pos)
+
     def removePiece(self, piece):
-        self.boardArray[piece.pos[1]][piece.pos[0]] = None
+        self.setBoardArray(None, piece.pos)
         del self.pieces[piece.color][piece.id]
 
     def genStartingPieces(self):
@@ -101,11 +123,7 @@ class Board():
         return not (1 <= pos[0] <= 8 and 1 <= pos[1] <= 8)
 
     def getPieceAt(self, pos):
-        for colorPieces in self.pieces.values():
-            for piece in colorPieces.values():
-                if piece.pos == pos:
-                    return piece
-        return None
+        return self.boardArray[pos[1]-1][pos[0]-1]
 
     def isSquareOccupied(self, pos):
         return self.getPieceAt(pos) is not None
@@ -281,11 +299,11 @@ class Board():
                 if captured:
                     del self.pieces[captured.color][captured.id]
 
-                piece.pos = move
+                self.movePiece(piece, move)
                 if not self.isInCheck(color):
                     filteredPieceMoves.append(move)
 
-                piece.pos = originalPos
+                self.movePiece(piece, originalPos)
                 if captured:
                     self.pieces[captured.color][captured.id] = captured
 
@@ -365,10 +383,10 @@ class Board():
                 rank = piece.pos[1]
                 if pos[0] == 7: # Kingside
                     rook = self.pieces[piece.color]['rook_2'] # h rook
-                    rook.pos = [6, rank]
+                    self.movePiece(rook, [6, rank])
                 elif pos[0] == 3: # Queenside
                     rook = self.pieces[piece.color]['rook_1'] # a rook
-                    rook.pos = [4, rank]
+                    self.movePiece(rook, [4, rank])
 
         if piece.type == 'king':
             self.canCastle[piece.color]['kingside'] = False
@@ -386,7 +404,7 @@ class Board():
             if piece.pos[1] == startingRank and pos[1] == twoSquareAdvanceRank:
                 self.enPassantSquare = [piece.pos[0], piece.pos[1] + (1 if piece.color == 'white' else -1)]
 
-        piece.pos = pos
+        self.movePiece(piece, pos)
 
         if piece.type == 'pawn':
             backRank = 8 if piece.color == 'white' else 1
