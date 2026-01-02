@@ -12,6 +12,7 @@ class Piece():
 class Board():
     def __init__(self):
         self.board = self.startPos() # Visual elements
+        self.boardArray = [[None for _ in range(8)] for _ in range(8)] # Logical elements
         self.pieces = {
             'white': {},
             'black': {}
@@ -59,9 +60,22 @@ class Board():
     
     def createPiece(self, pieceType, pos, color):
         self.pieceCounters[color][pieceType] += 1
-        piece = Piece(pieceType, pos, color, f'{pieceType}_{self.pieceCounters[color][pieceType]}')
+        pieceId = f'{pieceType}_{self.pieceCounters[color][pieceType]}'
+
+        piece = Piece(pieceType, pos, color, pieceId)
         self.pieces[color][piece.id] = piece
+        self.boardArray[pos[1]][pos[0]] = piece
+        
         return piece
+        
+    def movePiece(self, piece, pos):
+        self.boardArray[piece.pos[1]][piece.pos[0]] = None
+        piece.pos = pos
+        self.boardArray[pos[1]][pos[0]] = piece
+    
+    def removePiece(self, piece):
+        self.boardArray[piece.pos[1]][piece.pos[0]] = None
+        del self.pieces[piece.color][piece.id]
 
     def genStartingPieces(self):
         color = 'white'
