@@ -1,5 +1,4 @@
-from constants import FILES, OPPOSITE_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER
-import copy
+from constants import FILES, OTHER_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER
 
 class Piece():
     def __init__(self, pieceType, pos, color, id):
@@ -11,6 +10,9 @@ class Piece():
         
 class Board():
     def __init__(self):
+        self.starterBoard()
+    
+    def clearBoard(self): # Sets board variables to default values
         self.board = self.startPos() # Visual elements
         self.boardArray = [[None for _ in range(8)] for _ in range(8)] # Logical elements
         self.pieces = {
@@ -39,27 +41,10 @@ class Board():
         self.turn = 'white'
         self.halfMoves = 0
         self.fullMoves = 0
-
-        self.genStartingPieces()
     
-    def clearBoard(self):
-        self.board = self.startPos()
-        self.boardArray = [[None for _ in range(8)] for _ in range(8)]
-        self.pieces = {
-            'white': {},
-            'black': {}
-        }
-        self.canCastle = {
-            'white': {'kingside': True, 'queenside': True},
-            'black': {'kingside': True, 'queenside': True}
-        }
-        self.pieceCounters = {
-            'white': PIECE_COUNTER.copy(),
-            'black': PIECE_COUNTER.copy()
-        }
-        self.kings = {}
-        self.enPassantSquare = None
-        self.turn = 'white'
+    def starterBoard(self):
+        self.clearBoard()
+        self.genStartingPieces()
 
     def startPos(self):
         return [
@@ -77,8 +62,11 @@ class Board():
         for rank in self.board:
             print(' '.join(rank))
     
-    def setBoardArray(self, piece, pos):
+    def setPieceOnBoardArray(self, piece, pos):
         self.boardArray[pos[1]-1][pos[0]-1] = piece
+    
+    def removePieceFromBoardArray(self, pos):
+        self.boardArray[pos[1]-1][pos[0]-1] = None
     
     def createPiece(self, pieceType, pos, color):
         self.pieceCounters[color][pieceType] += 1
@@ -86,17 +74,17 @@ class Board():
 
         piece = Piece(pieceType, pos, color, pieceId)
         self.pieces[color][piece.id] = piece
-        self.setBoardArray(piece, pos)
+        self.setPieceOnBoardArray(piece, pos)
         
         return piece
         
     def movePiece(self, piece, pos):
-        self.setBoardArray(None, piece.pos)
+        self.removePieceFromBoardArray(piece.pos)
         piece.pos = pos
-        self.setBoardArray(piece, pos)
+        self.setPieceOnBoardArray(piece, pos)
 
     def removePiece(self, piece):
-        self.setBoardArray(None, piece.pos)
+        self.removePieceFromBoardArray(piece.pos)
         del self.pieces[piece.color][piece.id]
 
     def genStartingPieces(self):
@@ -173,14 +161,13 @@ class Board():
         for fileOffset in [-1, 1]:
             captureSquare = [piece.pos[0] + fileOffset, piece.pos[1] + direction]
             if not self.isOutOfBounds(captureSquare):
-                if only_squares:
+                if only_squares: # For calculating attack squares only
                     moves.append(captureSquare)
-                else:
+                else: # For calculating actual moves
                     occupyingPiece = self.getPieceAt(captureSquare)
                     if occupyingPiece and occupyingPiece.color != piece.color:
                         moves.append(captureSquare)
-                    # En passant
-                    if self.enPassantSquare and captureSquare == self.enPassantSquare:
+                    elif self.enPassantSquare and captureSquare == self.enPassantSquare:
                         moves.append(captureSquare)
 
         return moves
@@ -192,13 +179,13 @@ class Board():
 
         # Forward move
         forwardSquare = [piece.pos[0], piece.pos[1] + direction]
-        if not self.isSquareOccupied(forwardSquare):
+        if not self.isSquareOccupied(forwardSquare) and not self.isOutOfBounds(forwardSquare):
             moves.append(forwardSquare)
 
             # Double move from starting position
             if piece.pos[1] == startRank:
                 doubleForwardSquare = [piece.pos[0], piece.pos[1] + 2 * direction]
-                if not self.isSquareOccupied(doubleForwardSquare):
+                if not self.isSquareOccupied(doubleForwardSquare) and not self.isOutOfBounds(doubleForwardSquare):
                     moves.append(doubleForwardSquare)
 
         # Captures
@@ -232,7 +219,7 @@ class Board():
         return attackSquares
     
     def isSquareAttacked(self, pos, color=None):
-        color = color if color else OPPOSITE_COLOR[self.turn] # Check if square is attacked by opponent
+        color = color if color else OTHER_COLOR[self.turn] # Check if square is attacked by opponent
         attackSquares = self.calculateAttackSquares(color)
         return tuple(pos) in attackSquares
     
@@ -242,14 +229,14 @@ class Board():
 
         if not self.canCastle[color]['kingside']:
             return False
-
+        
         castlingRook = self.getPieceAt([8, rank])
         if not castlingRook or castlingRook.type != 'rook' or castlingRook.color != color:
             return False
         
         squaresBetween = [[6, rank], [7, rank]]
         for square in squaresBetween:
-            if self.isSquareOccupied(square) or self.isSquareAttacked(square, OPPOSITE_COLOR[color]):
+            if self.isSquareOccupied(square) or self.isSquareAttacked(square, OTHER_COLOR[color]):
                 return False
         
         return True
@@ -271,7 +258,7 @@ class Board():
         
         squaresBetween = [[2, rank], [3, rank], [4, rank]]
         for square in squaresBetween:
-            if self.isSquareOccupied(square) or self.isSquareAttacked(square):
+            if self.isSquareOccupied(square) or self.isSquareAttacked(square, OTHER_COLOR[color]):
                 return False
         
         return True
@@ -279,15 +266,17 @@ class Board():
     def isInCheck(self, color=None):
         color = color if color else self.turn
         
-        king = self.kings.get(color)
-        if king and self.isSquareAttacked(king.pos, OPPOSITE_COLOR[color]):
+        king = self.kings[color]
+        if king and self.isSquareAttacked(king.pos, OTHER_COLOR[color]):
             return True
         
         return False
     
-    def filterLegalMoves(self, moves, color=None):
+    def filterLegalMoves(self, moves, color=None): # Removes moves that would leave king in check
         color = color if color else self.turn
         filteredMoves = {}
+
+        # This process automatically handles pins as well
 
         for pieceId, pieceMoves in moves.items():
             filteredPieceMoves = []
@@ -295,19 +284,20 @@ class Board():
             originalPos = piece.pos.copy()
 
             for move in pieceMoves:
-                captured = self.getPieceAt(move)
+                captured = self.getPieceAt(move) 
                 if captured:
-                    del self.pieces[captured.color][captured.id]
+                    self.removePiece(captured) # Temporarily remove captured piece
 
-                self.movePiece(piece, move)
-                if not self.isInCheck(color):
+                self.movePiece(piece, move) # Temporarily move piece
+                if not self.isInCheck(color): # If the king is not in check after move, it's legal
                     filteredPieceMoves.append(move)
 
-                self.movePiece(piece, originalPos)
+                self.movePiece(piece, originalPos) # Move piece back
                 if captured:
-                    self.pieces[captured.color][captured.id] = captured
+                    self.pieces[captured.color][captured.id] = captured # Restore captured piece
+                    self.setPieceOnBoardArray(captured, move) # Place captured piece back on board array
 
-            if filteredPieceMoves:
+            if filteredPieceMoves: # Only add if there are legal moves, avoids empty lists in dictionary
                 filteredMoves[pieceId] = filteredPieceMoves
 
         return filteredMoves
@@ -357,35 +347,35 @@ class Board():
         return {
             'gameOver': checkmate or stalemate,
             'reason': 'checkmate' if checkmate else 'stalemate' if stalemate else None,
-            'winner': OPPOSITE_COLOR[self.turn] if checkmate else None
+            'winner': OTHER_COLOR[self.turn] if checkmate else None
         } # might change later
     
     def promotePawn(self, pawn, newType='queen'):
+        self.removePiece(pawn)
         promotedPiece = self.createPiece(newType, pawn.pos, pawn.color)
-        del self.pieces[pawn.color][pawn.id]
+
+        # Trying to remove the pawn after creating the promoted piece would remove the new piece instead since they have the same position
         
         return promotedPiece
 
     def makeMove(self, piece, pos):
         target = self.getPieceAt(pos)
         if target and target.id != piece.id:
-            del self.pieces[target.color][target.id]
+            self.removePiece(target)
         elif piece.type == 'pawn' and pos == self.enPassantSquare:
             direction = 1 if piece.color == 'white' else -1
-            capturedPawnPos = [pos[0], pos[1] - direction]
-            capturedPawn = self.getPieceAt(capturedPawnPos)
-            if capturedPawn:
-                del self.pieces[capturedPawn.color][capturedPawn.id]
+            capturedPawn = self.getPieceAt([pos[0], pos[1] - direction])
+            self.removePiece(capturedPawn)
 
         if piece.type == 'king':
             netHorizontalMove = abs(pos[0] - piece.pos[0])
-            if netHorizontalMove == 2: # Castling
+            if netHorizontalMove == 2: # The king is moving two squares, indicating castling
                 rank = piece.pos[1]
                 if pos[0] == 7: # Kingside
-                    rook = self.pieces[piece.color]['rook_2'] # h rook
+                    rook = self.getPieceAt([8, rank]) # h rook
                     self.movePiece(rook, [6, rank])
                 elif pos[0] == 3: # Queenside
-                    rook = self.pieces[piece.color]['rook_1'] # a rook
+                    rook = self.getPieceAt([1, rank]) # a rook
                     self.movePiece(rook, [4, rank])
 
         if piece.type == 'king':
@@ -409,9 +399,9 @@ class Board():
         if piece.type == 'pawn':
             backRank = 8 if piece.color == 'white' else 1
             if piece.pos[1] == backRank:
-                self.promotePawn(piece, 'queen')
+                self.promotePawn(piece, 'queen') # Auto promote to queen for simplicity until user input is added
 
-        self.turn = OPPOSITE_COLOR[self.turn]
+        self.turn = OTHER_COLOR[self.turn]
 
 
 if __name__ == '__main__':

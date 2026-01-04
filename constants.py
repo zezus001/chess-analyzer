@@ -1,6 +1,6 @@
 FILES = 'abcdefgh'
 
-OPPOSITE_COLOR = {
+OTHER_COLOR = {
     'white': 'black',
     'black': 'white'
 }

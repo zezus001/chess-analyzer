@@ -484,8 +484,9 @@ def testCastleKingside():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
-    
+    board.removePiece(board.getPieceAt([6, 1]))  # f1
+    board.removePiece(board.getPieceAt([7, 1]))  # g1
+
     # Ensure no checks on path
     assert board.canCastleKingside() == True
 
@@ -499,8 +500,10 @@ def testCastleQueenside():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
-    
+    board.removePiece(board.getPieceAt([2, 1]))  # f1
+    board.removePiece(board.getPieceAt([3, 1]))  # f1
+    board.removePiece(board.getPieceAt([4, 1]))  # g1
+
     # Ensure no checks on path
     assert board.canCastleQueenside() == True
 
@@ -514,7 +517,8 @@ def testBlackCastleKingside():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['black'] = {pid: p for pid, p in board.pieces['black'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    board.removePiece(board.getPieceAt([6, 8]))  # f8
+    board.removePiece(board.getPieceAt([7, 8]))  # g8
 
     # Ensure no checks on path
     assert board.canCastleKingside('black') == True
@@ -529,8 +533,9 @@ def testCannotCastleThroughCheck():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
-    
+    board.removePiece(board.getPieceAt([6, 1]))  # f1
+    board.removePiece(board.getPieceAt([7, 1]))  # g1
+
     # Place an enemy knight attacking the square the king would pass through
     enemyKnight = board.createPiece('knight', [5, 3], 'black')
 
@@ -540,7 +545,8 @@ def testBlackCannotCastleThroughCheck():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['black'] = {pid: p for pid, p in board.pieces['black'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    board.removePiece(board.getPieceAt([6, 8]))  # f8
+    board.removePiece(board.getPieceAt([7, 8]))  # g8
     
     # Place an enemy knight attacking the square the king would pass through
     enemyKnight = board.createPiece('knight', [5, 6], 'white')
@@ -551,7 +557,8 @@ def testCannotCastleIfKingMoves():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    board.removePiece(board.getPieceAt([6, 1]))  # f1
+    board.removePiece(board.getPieceAt([7, 1]))  # g1
 
     # Move the king
     board.makeMove(board.kings['white'], [6, 1])
@@ -562,7 +569,8 @@ def testCannotCastleIfRookMoves():
     board = Board()
     
     # Clear squares between king and rook
-    board.pieces['white'] = {pid: p for pid, p in board.pieces['white'].items() if p.type not in ['knight', 'bishop', 'queen']}
+    board.removePiece(board.getPieceAt([6, 1]))  # f1
+    board.removePiece(board.getPieceAt([7, 1]))  # g1
 
     # Move the rook
     rook = board.pieces['white']['rook_2']  # h1 rook
@@ -657,7 +665,7 @@ def testPromotionIntoCheck():
     board.clearBoard()
     
     blackKing = board.createPiece('king', [8, 8], 'black')        # h8
-    board.kings['white'] = blackKing
+    board.kings['black'] = blackKing
 
     whitePawn = board.createPiece('pawn', [1, 7], 'white')  # h pawn
 
@@ -730,3 +738,40 @@ def testPromotionIntoStalemate():
     board.makeMove(whitePawn, [3, 8])
 
     assert board.isInStalemate() == True
+
+def testSmokeBasicGameFlow():
+    board = Board()
+
+    # 1. Board initializes
+    assert board.turn == 'white'
+    assert len(board.pieces['white']) == 16
+    assert len(board.pieces['black']) == 16
+    assert board.kings['white'] is not None
+    assert board.kings['black'] is not None
+
+    # 2. Legal moves exist for both sides
+    white_moves = board.calculateMoves('white')
+    assert white_moves
+    assert any(white_moves.values())
+
+    # 3. Make a legal white move
+    piece_id, moves = next(iter(white_moves.items()))
+    move = moves[0]
+    piece = board.pieces['white'][piece_id]
+
+    board.makeMove(piece, move)
+
+    # 4. State updated correctly
+    assert piece.pos == move
+    assert board.turn == 'black'
+
+    # 5. Black can move
+    black_moves = board.calculateMoves('black')
+    assert black_moves
+    assert any(black_moves.values())
+
+    # 6. Board array matches piece positions
+    for color in ['white', 'black']:
+        for p in board.pieces[color].values():
+            x, y = p.pos
+            assert board.boardArray[y - 1][x - 1] == p
