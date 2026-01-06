@@ -775,3 +775,52 @@ def testSmokeBasicGameFlow():
         for p in board.pieces[color].values():
             x, y = p.pos
             assert board.boardArray[y - 1][x - 1] == p
+
+def testMoveHistoryTracking():
+    board = Board()
+
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 4])  # e4
+
+    assert len(board.moveHistory) == 1
+    assert board.moveHistory[0]['pieceId'] == 'pawn_5'
+    assert board.moveHistory[0]['from'] == [5, 2]
+    assert board.moveHistory[0]['to'] == [5, 4]
+    assert board.moveHistory[0]['enPassantSquare'] == [5, 3]
+    assert board.moveHistory[0]['pieces'] == board.pieces
+    assert board.moveHistory[0]['boardArray'] == board.boardArray
+    assert board.moveHistory[0]['canCastle'] == {
+            'white': {'kingside': True, 'queenside': True},
+            'black': {'kingside': True, 'queenside': True}
+        }
+    assert board.moveHistory[0]['turn'] == 'white'
+    assert board.moveHistory[0]['halfMoves'] == 0
+    assert board.moveHistory[0]['fullMoves'] == 0
+
+    board.makeMove(board.pieces['black']['knight_2'], [6, 6])  # f6
+
+    assert len(board.moveHistory) == 2
+    assert board.moveHistory[1]['pieceId'] == 'knight_2'
+    assert board.moveHistory[1]['from'] == [7, 8]
+    assert board.moveHistory[1]['to'] == [6, 6]
+    assert board.moveHistory[1]['enPassantSquare'] is None
+    assert board.moveHistory[1]['pieces'] == board.pieces
+    assert board.moveHistory[1]['boardArray'] == board.boardArray
+    assert board.moveHistory[1]['turn'] == 'black'
+    assert board.moveHistory[1]['halfMoves'] == 1
+    assert board.moveHistory[1]['fullMoves'] == 1
+
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 5])  # e5
+    board.makeMove(board.pieces['black']['pawn_5'], [5, 6])  # e6
+    board.makeMove(board.pieces['white']['pawn_5'], [6, 6])  # exf6
+
+    assert len(board.moveHistory) == 5
+    assert board.moveHistory[4]['pieceId'] == 'pawn_5'
+    assert 'knight_2' not in board.moveHistory[4]['pieces']['black']  # captured piece
+
+    board.makeMove(board.pieces['black']['bishop_2'], [3, 4])  # c4
+    board.makeMove(board.pieces['white']['pawn_6'], [6, 5])  # f5
+    board.makeMove(board.pieces['black']['king_1'], [7, 8])  # Kingside castling
+
+    assert len(board.moveHistory) == 8
+    assert board.moveHistory[7]['pieceId'] == 'king_1'
+    assert board.moveHistory[7]['canCastle']['black']['kingside'] == False

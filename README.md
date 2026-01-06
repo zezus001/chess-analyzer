@@ -5,8 +5,9 @@ Current focus is implementing basic chess structure and functions.
 
 ## Current Status
 - Board + starting position implemented
-- Piece objects + move logic in progress
-- Move generation WIP
+- Piece objects + move logic finished
+- Rules engine finished
+- Move history WIP
 
 ## How to Run
 

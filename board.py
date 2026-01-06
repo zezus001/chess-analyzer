@@ -33,7 +33,7 @@ class Board():
             'winner': None
         }
         self.legalMoves = {}
-        self.moveHistory = {}
+        self.moveHistory = []
         self.kings = {}  # Store kings for quick access
         self.enPassantSquare = None
         self.check = False
@@ -394,15 +394,41 @@ class Board():
             if piece.pos[1] == startingRank and pos[1] == twoSquareAdvanceRank:
                 self.enPassantSquare = [piece.pos[0], piece.pos[1] + (1 if piece.color == 'white' else -1)]
 
+        originalPos = piece.pos.copy()
         self.movePiece(piece, pos)
+
+        if piece.type == 'pawn' or target:
+            self.halfMoves = 0
+        else:
+            self.halfMoves += 1
+        if self.turn == 'black':
+            self.fullMoves += 1
 
         if piece.type == 'pawn':
             backRank = 8 if piece.color == 'white' else 1
             if piece.pos[1] == backRank:
                 self.promotePawn(piece, 'queen') # Auto promote to queen for simplicity until user input is added
 
+        self.recordMove(piece, originalPos, pos)
+
         self.turn = OTHER_COLOR[self.turn]
 
+        assert not self.isOutOfBounds(piece.pos)
+    
+    def recordMove(self, piece, fromPos, toPos):
+        moveRecord = {
+            'pieceId': piece.id,
+            'from': fromPos,
+            'to': toPos,
+            'boardArray': self.boardArray.copy(),
+            'pieces': self.pieces.copy(),
+            'canCastle': self.canCastle.copy(),
+            'enPassantSquare': self.enPassantSquare,
+            'turn': self.turn,
+            'halfMoves': self.halfMoves,
+            'fullMoves': self.fullMoves
+        }
+        self.moveHistory.append(moveRecord)
 
 if __name__ == '__main__':
     board = Board()
