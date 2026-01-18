@@ -1,4 +1,5 @@
 from constants import FILES, OTHER_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER
+import copy
 
 class Piece():
     def __init__(self, pieceType, pos, color, id):
@@ -276,7 +277,7 @@ class Board():
         color = color if color else self.turn
         filteredMoves = {}
 
-        # This process automatically handles pins as well
+        # This process automatically handles checks and pins as well
 
         for pieceId, pieceMoves in moves.items():
             filteredPieceMoves = []
@@ -417,18 +418,29 @@ class Board():
     
     def recordMove(self, piece, fromPos, toPos):
         moveRecord = {
-            'pieceId': piece.id,
-            'from': fromPos,
-            'to': toPos,
-            'boardArray': self.boardArray.copy(),
-            'pieces': self.pieces.copy(),
-            'canCastle': self.canCastle.copy(),
-            'enPassantSquare': self.enPassantSquare,
-            'turn': self.turn,
-            'halfMoves': self.halfMoves,
-            'fullMoves': self.fullMoves
+            'move': {
+                'pieceId': piece.id,
+                'from': fromPos,
+                'to': toPos
+            },
+            'board': {
+                'boardArray': copy.deepcopy(self.boardArray),
+                'pieces': copy.deepcopy(self.pieces),
+                'canCastle': copy.deepcopy(self.canCastle),
+                'enPassantSquare': self.enPassantSquare,
+                'check': self.check,
+                'turn': self.turn,
+                'halfMoves': self.halfMoves,
+                'fullMoves': self.fullMoves
+            }
         }
         self.moveHistory.append(moveRecord)
+
+    def jumpToMove(self, moveIndex = None):
+        moveIndex = moveIndex if moveIndex else len(self.moveHistory)-2 # Index of the previous move in self.moveHistory
+        
+        for var, val in self.moveHistory[moveIndex]['board'].items():
+            setattr(self, var, val)
 
 if __name__ == '__main__':
     board = Board()

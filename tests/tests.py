@@ -1,6 +1,34 @@
 import pytest
 from board import Board
 
+def assert_same_position(boardArray1, boardArray2):
+    for y in range(8):
+        for x in range(8):
+            p1 = boardArray1[y][x]
+            p2 = boardArray2[y][x]
+
+            if p1 is None:
+                assert p2 is None
+            else:
+                assert p2 is not None
+                assert p1.type == p2.type
+                assert p1.color == p2.color
+                assert p1.pos == p2.pos
+
+
+def assert_same_pieces(pieces1, pieces2):
+    for color in ('white', 'black'):
+        assert set(pieces1[color].keys()) == set(pieces2[color].keys())
+
+        for pid in pieces1[color]:
+            p1 = pieces1[color][pid]
+            p2 = pieces2[color][pid]
+
+            assert p1.type == p2.type
+            assert p1.color == p2.color
+            assert p1.pos == p2.pos
+
+
 def testOutOfBounds():
     board = Board()
     assert board.isOutOfBounds([0, 5]) == True
@@ -779,48 +807,105 @@ def testSmokeBasicGameFlow():
 def testMoveHistoryTracking():
     board = Board()
 
-    board.makeMove(board.pieces['white']['pawn_5'], [5, 4])  # e4
+    # ---- Move 1: e4 ----
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 4])
 
     assert len(board.moveHistory) == 1
-    assert board.moveHistory[0]['pieceId'] == 'pawn_5'
-    assert board.moveHistory[0]['from'] == [5, 2]
-    assert board.moveHistory[0]['to'] == [5, 4]
-    assert board.moveHistory[0]['enPassantSquare'] == [5, 3]
-    assert board.moveHistory[0]['pieces'] == board.pieces
-    assert board.moveHistory[0]['boardArray'] == board.boardArray
-    assert board.moveHistory[0]['canCastle'] == {
-            'white': {'kingside': True, 'queenside': True},
-            'black': {'kingside': True, 'queenside': True}
-        }
-    assert board.moveHistory[0]['turn'] == 'white'
-    assert board.moveHistory[0]['halfMoves'] == 0
-    assert board.moveHistory[0]['fullMoves'] == 0
+    entry = board.moveHistory[0]
 
-    board.makeMove(board.pieces['black']['knight_2'], [6, 6])  # f6
+    assert entry['move']['pieceId'] == 'pawn_5'
+    assert entry['move']['from'] == [5, 2]
+    assert entry['move']['to'] == [5, 4]
+
+    snapshot = entry['board']
+
+    assert snapshot['enPassantSquare'] == [5, 3]
+    assert snapshot['turn'] == 'white'
+    assert snapshot['halfMoves'] == 0
+    assert snapshot['fullMoves'] == 0
+
+    assert snapshot['canCastle'] == {
+        'white': {'kingside': True, 'queenside': True},
+        'black': {'kingside': True, 'queenside': True}
+    }
+
+    assert_same_position(snapshot['boardArray'], board.boardArray)
+    assert_same_pieces(snapshot['pieces'], board.pieces)
+
+    # ---- Move 2: ... Nf6 ----
+    board.makeMove(board.pieces['black']['knight_2'], [6, 6])
 
     assert len(board.moveHistory) == 2
-    assert board.moveHistory[1]['pieceId'] == 'knight_2'
-    assert board.moveHistory[1]['from'] == [7, 8]
-    assert board.moveHistory[1]['to'] == [6, 6]
-    assert board.moveHistory[1]['enPassantSquare'] is None
-    assert board.moveHistory[1]['pieces'] == board.pieces
-    assert board.moveHistory[1]['boardArray'] == board.boardArray
-    assert board.moveHistory[1]['turn'] == 'black'
-    assert board.moveHistory[1]['halfMoves'] == 1
-    assert board.moveHistory[1]['fullMoves'] == 1
+    entry = board.moveHistory[1]
 
-    board.makeMove(board.pieces['white']['pawn_5'], [5, 5])  # e5
-    board.makeMove(board.pieces['black']['pawn_5'], [5, 6])  # e6
+    assert entry['move']['pieceId'] == 'knight_2'
+    assert entry['move']['from'] == [7, 8]
+    assert entry['move']['to'] == [6, 6]
+
+    snapshot = entry['board']
+
+    assert snapshot['enPassantSquare'] is None
+    assert snapshot['turn'] == 'black'
+    assert snapshot['halfMoves'] == 1
+    assert snapshot['fullMoves'] == 1
+
+    assert_same_position(snapshot['boardArray'], board.boardArray)
+    assert_same_pieces(snapshot['pieces'], board.pieces)
+
+    # ---- En passant capture ----
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 5])
+    board.makeMove(board.pieces['black']['pawn_5'], [5, 6])
     board.makeMove(board.pieces['white']['pawn_5'], [6, 6])  # exf6
 
     assert len(board.moveHistory) == 5
-    assert board.moveHistory[4]['pieceId'] == 'pawn_5'
-    assert 'knight_2' not in board.moveHistory[4]['pieces']['black']  # captured piece
+    snapshot = board.moveHistory[4]['board']
 
-    board.makeMove(board.pieces['black']['bishop_2'], [3, 4])  # c4
-    board.makeMove(board.pieces['white']['pawn_6'], [6, 5])  # f5
-    board.makeMove(board.pieces['black']['king_1'], [7, 8])  # Kingside castling
+    assert 'knight_2' not in snapshot['pieces']['black']
+
+    # ---- Castling ----
+    board.makeMove(board.pieces['black']['bishop_2'], [3, 4])
+    board.makeMove(board.pieces['white']['pawn_6'], [6, 5])
+    board.makeMove(board.pieces['black']['king_1'], [7, 8])  # O-O
 
     assert len(board.moveHistory) == 8
-    assert board.moveHistory[7]['pieceId'] == 'king_1'
-    assert board.moveHistory[7]['canCastle']['black']['kingside'] == False
+    snapshot = board.moveHistory[7]['board']
+
+    assert snapshot['canCastle']['black']['kingside'] is False
+    assert snapshot['canCastle']['black']['queenside'] is False
+
+    assert_same_position(snapshot['boardArray'], board.boardArray)
+    assert_same_pieces(snapshot['pieces'], board.pieces)
+
+    # ---- Snapshot immutability check ----
+    snapshot['turn'] = 'white'
+    assert board.turn == 'white'  # Must NOT change
+
+def testMoveRewinding():
+    board = Board()
+
+    assert board.fullMoves == 0
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 4])  # e4
+    board.makeMove(board.pieces['black']['knight_2'], [6, 6])  # f6
+    assert board.fullMoves == 1
+    board.makeMove(board.pieces['white']['pawn_5'], [5, 5])  # e5
+    board.makeMove(board.pieces['black']['pawn_5'], [5, 6])  # e6
+    assert board.fullMoves == 2
+    board.makeMove(board.pieces['white']['pawn_5'], [6, 6])  # exf6
+    board.makeMove(board.pieces['black']['bishop_2'], [3, 4])  # c4
+    assert board.fullMoves == 3
+    board.makeMove(board.pieces['white']['pawn_6'], [6, 5])  # f5
+    board.makeMove(board.pieces['black']['king_1'], [7, 8])  # Kingside castling
+    assert board.fullMoves == 4
+
+    board.jumpToMove()
+    assert board.fullMoves == 3
+    board.jumpToMove()
+    board.jumpToMove()
+    assert board.fullMoves == 2
+    board.jumpToMove()
+    board.jumpToMove()
+    assert board.fullMoves == 1
+    board.jumpToMove()
+    board.jumpToMove()
+    assert board.fullMoves == 0
+    board.jumpToMove()
