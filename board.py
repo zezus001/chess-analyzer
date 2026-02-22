@@ -13,7 +13,7 @@ class Board():
     def __init__(self):
         self.starterBoard()
     
-    def clearBoard(self): # Sets board variables to default values
+    def clearBoard(self, resetMoveHistory=True): # Sets board variables to default values
         self.board = self.startPos() # Visual elements
         self.boardArray = [[None for _ in range(8)] for _ in range(8)] # Logical elements
         self.pieces = {
@@ -34,7 +34,6 @@ class Board():
             'winner': None
         }
         self.legalMoves = {}
-        self.moveHistory = []
         self.kings = {}  # Store kings for quick access
         self.enPassantSquare = None
         self.check = False
@@ -42,9 +41,13 @@ class Board():
         self.turn = 'white'
         self.halfMoves = 0
         self.fullMoves = 0
+        self.currentMoveIndex = -1 # Index of the current move in moveHistory, -1 means the starting position which is not stored in moveHistory
+
+        if resetMoveHistory:
+            self.moveHistory = [] # Stores the history of moves and board states for undo/redo functionality
     
-    def starterBoard(self):
-        self.clearBoard()
+    def starterBoard(self, resetMoveHistory=True):
+        self.clearBoard(resetMoveHistory)
         self.genStartingPieces()
 
     def startPos(self):
@@ -411,7 +414,6 @@ class Board():
                 self.promotePawn(piece, 'queen') # Auto promote to queen for simplicity until user input is added
 
         self.recordMove(piece, originalPos, pos)
-
         self.turn = OTHER_COLOR[self.turn]
 
         assert not self.isOutOfBounds(piece.pos)
@@ -435,11 +437,23 @@ class Board():
             }
         }
         self.moveHistory.append(moveRecord)
+        self.currentMoveIndex += 1
 
-    def jumpToMove(self, moveIndex = None):
-        moveIndex = moveIndex if moveIndex else len(self.moveHistory)-2 # Index of the previous move in self.moveHistory
+    def jumpToMove(self, moveIndex=None):
+        if moveIndex is None:
+            moveIndex = self.currentMoveIndex - 1 # Jump to last move by default
         
-        for var, val in self.moveHistory[moveIndex]['board'].items():
+        if moveIndex < -1 or moveIndex >= len(self.moveHistory):
+            raise IndexError("Move index out of bounds")
+        if moveIndex == -1:
+            self.starterBoard(False) # Starting position is not stored in moveHistory, so reset to initial state
+            return
+        if moveIndex == self.currentMoveIndex:
+            return
+        
+        self.currentMoveIndex = moveIndex
+        snapshot = self.moveHistory[moveIndex]['board']
+        for var, val in snapshot.items():
             setattr(self, var, val)
 
 if __name__ == '__main__':

@@ -880,32 +880,62 @@ def testMoveHistoryTracking():
     snapshot['turn'] = 'white'
     assert board.turn == 'white'  # Must NOT change
 
+def moveJumpingTestGame(board):
+    moves = [
+        ['pawn_5', [5, 4]],  # e4
+        ['knight_2', [6, 6]],  # Nf6
+        ['pawn_5', [5, 5]],  # e5
+        ['pawn_7', [7, 6]],  # g6
+        ['pawn_5', [6, 6]],  # exf6
+        ['bishop_2', [8, 6]],  # Bh6
+        ['knight_2', [5, 3]],  # Nf3
+        ['king_1', [7, 8]],  # O-O
+        ['pawn_5', [5, 7]],  # e7
+        ['pawn_4', [4, 6]],  # d6
+        ['pawn_5', [4, 8]],  # d8=Q
+        ['pawn_2', [2, 6]],  # b6
+        ['queen_2', [3, 7]],  # Qxc7
+        ['knight_1', [1, 6]],  # Na6
+        ['queen_2', [3, 8]],  # Qc8
+        ['rook_1', [3, 8]],  # Rxc8
+    ] # The purpose of this game is to create a variety of move types (normal moves, captures, promotion, castling) to test the move history jumping functionality
+    
+    boardSnapshots = []
+    for move in moves:
+        piece = move[0]
+        target = move[1]
+        
+        board.makeMove(board.pieces[board.turn][piece], target)
+        boardSnapshots.append(board.moveHistory[-1]['board'])
+
+    return boardSnapshots
+
 def testMoveRewinding():
     board = Board()
+    boardSnapshots = moveJumpingTestGame(board)
 
-    assert board.fullMoves == 0
-    board.makeMove(board.pieces['white']['pawn_5'], [5, 4])  # e4
-    board.makeMove(board.pieces['black']['knight_2'], [6, 6])  # f6
-    assert board.fullMoves == 1
-    board.makeMove(board.pieces['white']['pawn_5'], [5, 5])  # e5
-    board.makeMove(board.pieces['black']['pawn_5'], [5, 6])  # e6
-    assert board.fullMoves == 2
-    board.makeMove(board.pieces['white']['pawn_5'], [6, 6])  # exf6
-    board.makeMove(board.pieces['black']['bishop_2'], [3, 4])  # c4
-    assert board.fullMoves == 3
-    board.makeMove(board.pieces['white']['pawn_6'], [6, 5])  # f5
-    board.makeMove(board.pieces['black']['king_1'], [7, 8])  # Kingside castling
-    assert board.fullMoves == 4
+    for i in range(len(boardSnapshots)-2, -2, -1):
+        board.jumpToMove()
+        assert board.currentMoveIndex == i
+        assert board.moveHistory[board.currentMoveIndex]['board'] == boardSnapshots[i]
 
-    board.jumpToMove()
-    assert board.fullMoves == 3
-    board.jumpToMove()
-    board.jumpToMove()
-    assert board.fullMoves == 2
-    board.jumpToMove()
-    board.jumpToMove()
-    assert board.fullMoves == 1
-    board.jumpToMove()
-    board.jumpToMove()
-    assert board.fullMoves == 0
-    board.jumpToMove()
+def testMoveForwarding():
+    board = Board()
+    boardSnapshots = moveJumpingTestGame(board)
+
+    board.jumpToMove(-1)  # Go back to end
+    assert board.currentMoveIndex == -1
+    for i in range(len(boardSnapshots)-1):
+        board.jumpToMove(i)
+        assert board.currentMoveIndex == i
+        assert board.moveHistory[board.currentMoveIndex]['board'] == boardSnapshots[i]
+
+def testMoveJumping():
+    board = Board()
+    boardSnapshots = moveJumpingTestGame(board)
+    moveIndicesToTest = [-1, 8, 14, 0, 3, 2, 7, 8, 7, 6, 7, 10, 11, 10, 9, 10, 11]  # Test various points in the history including the end
+
+    for index in moveIndicesToTest:
+        board.jumpToMove(index)
+        assert board.currentMoveIndex == index
+        assert board.moveHistory[board.currentMoveIndex]['board'] == boardSnapshots[index]
