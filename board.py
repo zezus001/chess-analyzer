@@ -1,4 +1,4 @@
-from constants import FILES, OTHER_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER
+from constants import FILES, OTHER_COLOR, PIECE_MOVEMENTS, SLIDING_PIECES, PIECE_COUNTER, FEN_TO_PIECE, PIECE_TO_FEN
 import copy
 
 class Piece():
@@ -40,7 +40,7 @@ class Board():
         self.FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
         self.turn = 'white'
         self.halfMoves = 0
-        self.fullMoves = 0
+        self.fullMoves = 1
         self.currentMoveIndex = -1 # Index of the current move in moveHistory, -1 means the starting position which is not stored in moveHistory
 
         if resetMoveHistory:
@@ -361,6 +361,73 @@ class Board():
         # Trying to remove the pawn after creating the promoted piece would remove the new piece instead since they have the same position
         
         return promotedPiece
+    
+    def loadFEN(self, fen):
+        splitFen = fen.split(' ')
+        fenMoves, fenTurn, fenCastling, fenEnPassant, fenHalfMoves, fenFullMoves = splitFen # Unpack FEN components
+
+        self.clearBoard()
+        for rankIndex, rank in enumerate(fenMoves.split('/')):
+            fileIndex = 0
+            for char in rank:
+                if char.isdigit():
+                    fileIndex += int(char)
+                else:
+                    color = 'white' if char.isupper() else 'black'
+                    pieceType = FEN_TO_PIECE[char.lower()]
+                    self.createPiece(pieceType, [fileIndex + 1, 8 - rankIndex], color)
+                    fileIndex += 1
+        
+        self.turn = 'white' if fenTurn == 'w' else 'black'
+        self.canCastle['white']['kingside'] = 'K' in fenCastling
+        self.canCastle['white']['queenside'] = 'Q' in fenCastling
+        self.canCastle['black']['kingside'] = 'k' in fenCastling
+        self.canCastle['black']['queenside'] = 'q' in fenCastling
+        self.enPassantSquare = None if fenEnPassant == '-' else [FILES.index(fenEnPassant[0]) + 1, int(fenEnPassant[1])]
+        self.halfMoves = int(fenHalfMoves)
+        self.fullMoves = int(fenFullMoves)
+
+    def generateFEN(self):
+        fen = ''
+
+        for rank in range(8, 0, -1):
+            emptyCount = 0
+            for file in range(1, 9):
+                piece = self.getPieceAt([file, rank])
+                if piece:
+                    if emptyCount > 0:
+                        fen += str(emptyCount)
+                        emptyCount = 0
+                    fen += PIECE_TO_FEN[piece.type].upper() if piece.color == 'white' else PIECE_TO_FEN[piece.type].lower()
+                else:
+                    emptyCount += 1
+            if emptyCount > 0:
+                fen += str(emptyCount)
+            if rank > 1:
+                fen += '/'
+        
+        fen += ' w ' if self.turn == 'white' else ' b '
+
+        castlingRights = ''
+        if self.canCastle['white']['kingside']:
+            castlingRights += 'K'
+        if self.canCastle['white']['queenside']:
+            castlingRights += 'Q'
+        if self.canCastle['black']['kingside']:
+            castlingRights += 'k'
+        if self.canCastle['black']['queenside']:
+            castlingRights += 'q'
+        fen += castlingRights if castlingRights else '-'
+        fen += ' '
+
+        if self.enPassantSquare:
+            fen += FILES[self.enPassantSquare[0] - 1] + str(self.enPassantSquare[1])
+        else:
+            fen += '-'
+        
+        fen += f' {self.halfMoves} {self.fullMoves}'
+
+        return fen
 
     def makeMove(self, piece, pos):
         target = self.getPieceAt(pos)
@@ -413,6 +480,7 @@ class Board():
             if piece.pos[1] == backRank:
                 self.promotePawn(piece, 'queen') # Auto promote to queen for simplicity until user input is added
 
+        self.FEN = self.generateFEN()
         self.recordMove(piece, originalPos, pos)
         self.turn = OTHER_COLOR[self.turn]
 
@@ -431,6 +499,7 @@ class Board():
                 'canCastle': copy.deepcopy(self.canCastle),
                 'enPassantSquare': self.enPassantSquare,
                 'check': self.check,
+                'FEN': self.FEN,
                 'turn': self.turn,
                 'halfMoves': self.halfMoves,
                 'fullMoves': self.fullMoves

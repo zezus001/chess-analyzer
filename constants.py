@@ -61,3 +61,13 @@ PIECE_MOVEMENTS = {
     "king": KING_MOVES,
     "pawn": PAWN_MOVES
 }
+
+FEN_TO_PIECE = {
+    'k': 'king',
+    'q': 'queen',
+    'r': 'rook',
+    'b': 'bishop',
+    'n': 'knight',
+    'p': 'pawn'
+}
+PIECE_TO_FEN = {v: k for k, v in FEN_TO_PIECE.items()}

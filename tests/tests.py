@@ -822,7 +822,7 @@ def testMoveHistoryTracking():
     assert snapshot['enPassantSquare'] == [5, 3]
     assert snapshot['turn'] == 'white'
     assert snapshot['halfMoves'] == 0
-    assert snapshot['fullMoves'] == 0
+    assert snapshot['fullMoves'] == 1
 
     assert snapshot['canCastle'] == {
         'white': {'kingside': True, 'queenside': True},
@@ -847,7 +847,7 @@ def testMoveHistoryTracking():
     assert snapshot['enPassantSquare'] is None
     assert snapshot['turn'] == 'black'
     assert snapshot['halfMoves'] == 1
-    assert snapshot['fullMoves'] == 1
+    assert snapshot['fullMoves'] == 2
 
     assert_same_position(snapshot['boardArray'], board.boardArray)
     assert_same_pieces(snapshot['pieces'], board.pieces)
@@ -933,9 +933,15 @@ def testMoveForwarding():
 def testMoveJumping():
     board = Board()
     boardSnapshots = moveJumpingTestGame(board)
-    moveIndicesToTest = [-1, 8, 14, 0, 3, 2, 7, 8, 7, 6, 7, 10, 11, 10, 9, 10, 11]  # Test various points in the history including the end
+    moveIndicesToTest = [-1, 8, 14, 0, 3, 2, 10, 1, 2, 3, 4, 3, 2, 1, 7, 8, 7, 6, 7, 10, 11, 10, 9, 10, 11, -1]  # Test various points in the history including the end
 
     for index in moveIndicesToTest:
         board.jumpToMove(index)
         assert board.currentMoveIndex == index
         assert board.moveHistory[board.currentMoveIndex]['board'] == boardSnapshots[index]
+
+def testStartingPositionFENGeneration():
+    board = Board()
+    fen = board.generateFEN()
+    expectedFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    assert fen == expectedFen
